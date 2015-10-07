@@ -1,3 +1,6 @@
+__all__ = ['Or', 'And', 'Not']
+
+
 class Operator(object):
     def __init__(self, *args):
         self.args = []
