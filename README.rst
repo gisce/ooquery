@@ -5,6 +5,7 @@ OpenObject Query
 Parsers OpenObjectes queries like:
 
 ..code-block: python
+
   search_params = [
     ('foo', '=', 'bar'),
     '|',
