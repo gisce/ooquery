@@ -1,7 +1,7 @@
 class Expression(object):
     def __init__(self, expression):
         if not self.is_expression(expression):
-            raise InvalidExpressionException()
+            raise InvalidExpressionException
         self.expression = expression
 
     @staticmethod
