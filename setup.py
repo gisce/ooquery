@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='ooquery',
-    version='0.1.1',
+    version='0.2.0',
     packages=find_packages(exclude=('tests', )),
     url='https://github.com/gisce/ooquery',
     license='MIT',
