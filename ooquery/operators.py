@@ -37,7 +37,16 @@ class Not(Operator):
     _operator = 'NOT'
     n_pops = 1
 
+    @property
+    def expression(self):
+        if len(self.args) > 1:
+            args = [Not(x).expression for x in self.args]
+            return And(*args).expression
+        else:
+            return '({0} {1})'.format(self._operator, self.args[0])
+
 OPERATORS_MAP = {
     '|': Or,
-    '&': And
+    '&': And,
+    '!': Not
 }

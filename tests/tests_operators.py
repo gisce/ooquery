@@ -11,6 +11,17 @@ class TestOperators(unittest.TestCase):
             "(('a', '=', 'b') OR ('a', '=', 'c'))"
         )
 
+    def test_not(self):
+        self.assertEqual(
+            Not(('a', '=', 'b')).expression,
+            "(NOT ('a', '=', 'b'))"
+        )
+
+        self.assertEqual(
+            Not(('a', '=', 'b'), ('c', '=', 'd')).expression,
+            "((NOT ('a', '=', 'b')) AND (NOT ('c', '=', 'd')))"
+        )
+
     def test_flattern(self):
         operation = Or(Or(('a', '=', 'b'), ('a', '=', 'c')), ('a', '=', 'd'))
 
