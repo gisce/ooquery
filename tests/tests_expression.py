@@ -13,3 +13,18 @@ class ExpressionTests(unittest.TestCase):
         def raises():
             Expression(('a',))
         self.assertRaises(InvalidExpressionException, raises)
+
+    def test_joins(self):
+        expression = ('invoice_id.journal_id.code', '=', 'BANK')
+        exp = Expression(expression)
+        self.assertEqual(
+            exp.joins,
+            [
+                ('invoice_id_table', ('main_table.invoice_id', 'invoice_id_table.id')),
+                ('journal_id_table', ('invoice_id_table.journal_id', 'journal_id_table.id'))
+            ]
+        )
+        self.assertEqual(
+            exp.conditions,
+            [('journal_id_table.code', '=', 'BANK')]
+        )
