@@ -46,7 +46,7 @@ class Parser(object):
                             fk = self.foreign_key(table._name)[field_join]
                             table_join = Table(fk['foreign_table_name'])
                             join = Join(self.join_on, table_join)
-                            column = getattr(table, field_join)
+                            column = getattr(table, fk['column_name'])
                             fk_col = getattr(join.right, fk['foreign_column_name'])
                             join.condition = Equal(column, fk_col)
                             join = self.get_join(join)
