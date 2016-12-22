@@ -10,6 +10,7 @@ class OOQuery(object):
         self.table = Table(table)
         self._select = self.table.select()
         self.parser = Parser(self.table, foreign_key)
+        self.select_opts = {}
 
     @property
     def select_on(self):
@@ -18,14 +19,15 @@ class OOQuery(object):
         else:
             return self.table
 
-    def select(self, fields=None):
+    def select(self, fields=None, **kwargs):
+        self.select_opts = kwargs
         if fields:
             self.fields = [getattr(self.table, arg) for arg in fields]
-            self._select = self.table.select(*self.fields)
+        self._select = self.select_on.select(*self.fields, **self.select_opts)
         return self
 
     def where(self, domain):
         where = self.parser.parse(domain)
-        self._select = self.select_on.select(*self.fields)
+        self._select = self.select_on.select(*self.fields, **self.select_opts)
         self._select.where = where
         return self._select
