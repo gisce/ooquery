@@ -143,3 +143,19 @@ with description('The OOQuery object'):
                 join.right.state == 'open'
             ))
             expect(tuple(sql)).to(equal(tuple(sel)))
+
+        with it('must support kwargs as python-sql select'):
+            q = OOQuery('table', None)
+            sql = q.select(['a', 'b'], limit=10).where([])
+
+            t = Table('table')
+            sel = t.select(t.a, t.b, limit=10)
+            expect(tuple(sql)).to(equal(tuple(sel)))
+
+        with it('must support order'):
+            q = OOQuery('table', None)
+            sql = q.select(['a', 'b'], order_by=('a.asc', 'b.desc')).where([])
+
+            t = Table('table')
+            sel = t.select(t.a, t.b, order_by=(t.a.asc, t.b.desc))
+            expect(tuple(sql)).to(equal(tuple(sel)))
