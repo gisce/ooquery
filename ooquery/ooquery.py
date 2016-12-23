@@ -21,6 +21,14 @@ class OOQuery(object):
 
     def select(self, fields=None, **kwargs):
         self.select_opts = kwargs
+        order_by = kwargs.pop('order_by', None)
+        if order_by:
+            kwargs['order_by'] = []
+            for item in order_by:
+                kwargs['order_by'].append(
+                    reduce(getattr, item.split('.'), self.select_on)
+                )
+
         if fields:
             self.fields = [getattr(self.table, arg) for arg in fields]
         self._select = self.select_on.select(*self.fields, **self.select_opts)
