@@ -6,7 +6,7 @@ from ooquery.parser import Parser
 
 class OOQuery(object):
     def __init__(self, table, foreign_key=None):
-        self.fields = None
+        self._fields = []
         self.table = Table(table)
         self._select = self.table.select()
         self.parser = Parser(self.table, foreign_key)
@@ -19,7 +19,22 @@ class OOQuery(object):
         else:
             return self.table
 
+    @property
+    def fields(self):
+        fields = []
+        for field in self._fields:
+            if '.' in field:
+                path = '.'.join(field.split('.')[:-1])
+                join = self.parser.joins_map.get(path)
+                if join:
+                    table = join.right
+                    fields.append(getattr(table, field.split('.')[-1]))
+            else:
+                fields.append(getattr(self.table, field))
+        return fields
+
     def select(self, fields=None, **kwargs):
+        self._fields = fields
         self.select_opts = kwargs
         order_by = kwargs.pop('order_by', None)
         if order_by:
@@ -28,9 +43,6 @@ class OOQuery(object):
                 kwargs['order_by'].append(
                     reduce(getattr, item.split('.'), self.select_on)
                 )
-
-        if fields:
-            self.fields = [getattr(self.table, arg) for arg in fields]
         self._select = self.select_on.select(*self.fields, **self.select_opts)
         return self
 
