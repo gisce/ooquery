@@ -75,9 +75,12 @@ with description('A parser'):
             p = Parser(t, dummy_fk)
             x = p.parse([('table_2.code', '=', 'XXX')])
             expect(p.joins).to(have_len(1))
+            expect(p.joins_map).to(have_len(1))
 
             join = t.join(Table('table2'))
             join.condition = join.left.table_2 == join.right.id
 
             expect(str(p.joins[0])).to(equal(str(join)))
+            expect(p.joins_map).to(have_key('table_2'))
+            expect(str(p.joins_map['table_2'])).to(equal(str(join)))
 

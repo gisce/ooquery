@@ -1,5 +1,6 @@
 # coding=utf-8
 from __future__ import absolute_import
+from collections import OrderedDict
 
 from sql import Table, Join
 from sql.operators import Equal
@@ -12,7 +13,7 @@ class Parser(object):
     def __init__(self, table, foreign_key=None):
         self.operators = OPERATORS_MAP
         self.table = table
-        self.joins = []
+        self.joins_map = OrderedDict()
         self.foreign_key = foreign_key
 
     def get_join(self, join):
@@ -21,6 +22,10 @@ class Parser(object):
                 if str(j.condition) == str(join.condition):
                     return j
         return None
+
+    @property
+    def joins(self):
+        return self.joins_map.values()
 
     @property
     def join_on(self):
@@ -40,10 +45,12 @@ class Parser(object):
                 field = expression[0]
                 column = getattr(self.table, field)
                 table = self.table
+                join_path = []
                 if '.' in field:
                     fields_join = field.split('.')
                     for idx, field_join in enumerate(fields_join, start=1):
                         is_last = bool(idx == len(fields_join))
+                        join_path.append(field_join)
                         if not is_last:
                             fk = self.foreign_key(table._name)[field_join]
                             table_join = Table(fk['foreign_table_name'])
@@ -55,7 +62,7 @@ class Parser(object):
                             if not join:
                                 join = self.join_on.join(table_join)
                                 join.condition = Equal(column, fk_col)
-                                self.joins.append(join)
+                                self.joins_map['.'.join(join_path)] = join
                                 table = table_join
                             else:
                                 table = join.right

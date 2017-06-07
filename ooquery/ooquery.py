@@ -21,7 +21,6 @@ class OOQuery(object):
 
     def select(self, fields=None, **kwargs):
         self.select_opts = kwargs
-        self.parser.joins = []
         order_by = kwargs.pop('order_by', None)
         if order_by:
             kwargs['order_by'] = []

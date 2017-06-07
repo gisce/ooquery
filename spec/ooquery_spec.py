@@ -85,6 +85,9 @@ with description('The OOQuery object'):
             sel = join2.select(t.field1, t.field2)
             sel.where = And((join2.right.code == 'XXX',))
             expect(tuple(sql)).to(equal(tuple(sel)))
+            expect(q.parser.joins_map).to(have_len(2))
+            expect(str(q.parser.joins_map['table_2_id'])).to(equal(str(join)))
+            expect(str(q.parser.joins_map['table_2_id.table_3_id'])).to(equal(str(join2)))
 
         with it('must support multiple deep joins'):
             def dummy_fk(table):
