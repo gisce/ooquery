@@ -41,8 +41,10 @@ class Parser(object):
                 column = getattr(self.table, field)
                 table = self.table
                 if '.' in field:
-                    for idx, field_join in enumerate(field.split('.')):
-                        if idx + 1 < len(field.split('.')):
+                    fields_join = field.split('.')
+                    for idx, field_join in enumerate(fields_join, start=1):
+                        is_last = bool(idx == len(fields_join))
+                        if not is_last:
                             fk = self.foreign_key(table._name)[field_join]
                             table_join = Table(fk['foreign_table_name'])
                             join = Join(self.join_on, table_join)
