@@ -24,7 +24,9 @@ class OOQuery(object):
         fields = []
         for field in self._fields:
             if '.' in field:
-                path = '.'.join(field.split('.')[:-1])
+                join_path = field.split('.')[:-1]
+                self.parser.parse_join(join_path)
+                path = '.'.join(join_path)
                 join = self.parser.joins_map.get(path)
                 if join:
                     table = join.right

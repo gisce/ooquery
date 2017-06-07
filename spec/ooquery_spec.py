@@ -48,6 +48,15 @@ with description('The OOQuery object'):
             sel.where = And((join.right.code == 'XXX',))
             expect(tuple(sql)).to(equal(tuple(sel)))
 
+            q = OOQuery('table', dummy_fk)
+            sql = q.select(['field1', 'field2', 'table_2.name']).where([])
+            t = Table('table')
+            t2 = Table('table2')
+            join = t.join(t2)
+            join.condition = join.left.table_2 == join.right.id
+            sel = join.select(t.field1, t.field2, t2.name)
+            expect(tuple(sql)).to(equal(tuple(sel)))
+
         with it('must support deep joins'):
             def dummy_fk(table):
                 if table == 'table':
