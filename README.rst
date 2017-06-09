@@ -28,3 +28,12 @@ Parsers OpenObjectes queries like:
            ('partner_id.name', '=', 'Pepito')
        ])
        cursor.execute(*sql)
+
+Support for reading from joined tables
+
+.. code-block:: python
+
+    q = OOQuery('account_invoice', fk_function)
+    sql = q.select(['number', 'partner_id.name', 'partner_id.vat']).where([
+        ('state', '=', 'open')
+    ])

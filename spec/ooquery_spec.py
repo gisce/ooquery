@@ -37,14 +37,24 @@ with description('The OOQuery object'):
                 }
 
             q = OOQuery('table', dummy_fk)
-            sql = q.select(['field1', 'field2']).where([
+            sql = q.select(['field1', 'field2', 'table_2.name']).where([
                 ('table_2.code', '=', 'XXX')
             ])
             t = Table('table')
-            join = t.join(Table('table2'))
+            t2 = Table('table2')
+            join = t.join(t2)
             join.condition = join.left.table_2 == join.right.id
-            sel = join.select(t.field1, t.field2)
+            sel = join.select(t.field1, t.field2, t2.name)
             sel.where = And((join.right.code == 'XXX',))
+            expect(tuple(sql)).to(equal(tuple(sel)))
+
+            q = OOQuery('table', dummy_fk)
+            sql = q.select(['field1', 'field2', 'table_2.name']).where([])
+            t = Table('table')
+            t2 = Table('table2')
+            join = t.join(t2)
+            join.condition = join.left.table_2 == join.right.id
+            sel = join.select(t.field1, t.field2, t2.name)
             expect(tuple(sql)).to(equal(tuple(sel)))
 
         with it('must support deep joins'):
@@ -72,7 +82,7 @@ with description('The OOQuery object'):
 
 
             q = OOQuery('table', dummy_fk)
-            sql = q.select(['field1', 'field2']).where([
+            sql = q.select(['field1', 'field2', 'table_2_id.table_3_id.name']).where([
                 ('table_2_id.table_3_id.code', '=', 'XXX')
             ])
             t = Table('table')
@@ -82,9 +92,12 @@ with description('The OOQuery object'):
             join.condition = t.table_2_id == join.right.id
             join2 = join.join(t3)
             join2.condition = t2.table_3_id == join2.right.id
-            sel = join2.select(t.field1, t.field2)
+            sel = join2.select(t.field1, t.field2, t3.name)
             sel.where = And((join2.right.code == 'XXX',))
             expect(tuple(sql)).to(equal(tuple(sel)))
+            expect(q.parser.joins_map).to(have_len(2))
+            expect(str(q.parser.joins_map['table_2_id'])).to(equal(str(join)))
+            expect(str(q.parser.joins_map['table_2_id.table_3_id'])).to(equal(str(join2)))
 
         with it('must support multiple deep joins'):
             def dummy_fk(table):

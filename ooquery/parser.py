@@ -1,5 +1,6 @@
 # coding=utf-8
 from __future__ import absolute_import
+from collections import OrderedDict
 
 from sql import Table, Join
 from sql.operators import Equal
@@ -12,7 +13,7 @@ class Parser(object):
     def __init__(self, table, foreign_key=None):
         self.operators = OPERATORS_MAP
         self.table = table
-        self.joins = []
+        self.joins_map = OrderedDict()
         self.foreign_key = foreign_key
 
     def get_join(self, join):
@@ -23,11 +24,35 @@ class Parser(object):
         return None
 
     @property
+    def joins(self):
+        return self.joins_map.values()
+
+    @property
     def join_on(self):
         if self.joins:
             return self.joins[-1]
         else:
             return self.table
+
+    def parse_join(self, fields_join):
+        table = self.table
+        join_path = []
+        for field_join in fields_join:
+            join_path.append(field_join)
+            fk = self.foreign_key(table._name)[field_join]
+            table_join = Table(fk['foreign_table_name'])
+            join = Join(self.join_on, table_join)
+            column = getattr(table, fk['column_name'])
+            fk_col = getattr(join.right, fk['foreign_column_name'])
+            join.condition = Equal(column, fk_col)
+            join = self.get_join(join)
+            if not join:
+                join = self.join_on.join(table_join)
+                join.condition = Equal(column, fk_col)
+                self.joins_map['.'.join(join_path)] = join
+                table = table_join
+            else:
+                table = join.right
 
     def parse(self, query):
         result = []
@@ -39,26 +64,12 @@ class Parser(object):
             if Expression.is_expression(expression):
                 field = expression[0]
                 column = getattr(self.table, field)
-                table = self.table
                 if '.' in field:
-                    for idx, field_join in enumerate(field.split('.')):
-                        if idx + 1 < len(field.split('.')):
-                            fk = self.foreign_key(table._name)[field_join]
-                            table_join = Table(fk['foreign_table_name'])
-                            join = Join(self.join_on, table_join)
-                            column = getattr(table, fk['column_name'])
-                            fk_col = getattr(join.right, fk['foreign_column_name'])
-                            join.condition = Equal(column, fk_col)
-                            join = self.get_join(join)
-                            if not join:
-                                join = self.join_on.join(table_join)
-                                join.condition = Equal(column, fk_col)
-                                self.joins.append(join)
-                                table = table_join
-                            else:
-                                table = join.right
-                        else:
-                            column = getattr(join.right, field_join)
+                    fields_join = field.split('.')[:-1]
+                    field_join = field.split('.')[-1]
+                    self.parse_join(fields_join)
+                    join = self.joins_map['.'.join(field.split('.')[:-1])]
+                    column = getattr(join.right, field_join)
                 expression = Expression(expression)
                 expression.left = column
                 result.append(expression.expression)
