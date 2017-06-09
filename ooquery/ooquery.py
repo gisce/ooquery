@@ -1,5 +1,7 @@
 # coding=utf-8
 from __future__ import absolute_import
+from functools import reduce
+
 from sql import Table
 from ooquery.parser import Parser
 
