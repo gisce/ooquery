@@ -2,7 +2,7 @@
 OpenObject Query
 ****************
 
-Python 2.7 and >3.5
+Python 2.7 and >=3.5
 
 .. image:: https://travis-ci.org/gisce/ooquery.svg?branch=master
     :target: https://travis-ci.org/gisce/ooquery
