@@ -25,7 +25,7 @@ class Parser(object):
 
     @property
     def joins(self):
-        return self.joins_map.values()
+        return list(self.joins_map.values())
 
     @property
     def join_on(self):
