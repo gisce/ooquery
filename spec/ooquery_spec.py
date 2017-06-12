@@ -14,13 +14,13 @@ with description('The OOQuery object'):
         with it('should have a select method which returns table.attr'):
             q = OOQuery('table')
             sel = q.select(['field1', 'field2'])
-            sel2 = q.table.select(q.table.field1, q.table.field2)
+            sel2 = q.table.select(q.table.field1.as_('field1'), q.table.field2.as_('field2'))
             expect(str(sel._select)).to(equal(str(sel2)))
         with it('should have a where method to pass the domain'):
             q = OOQuery('table')
             sql = q.select(['field1', 'field2']).where([('field3', '=', 4)])
             t = Table('table')
-            sel = t.select(t.field1, t.field2)
+            sel = t.select(t.field1.as_('field1'), t.field2.as_('field2'))
             sel.where = And((t.field3 == 4,))
             expect(tuple(sql)).to(equal(tuple(sel)))
 
@@ -44,7 +44,7 @@ with description('The OOQuery object'):
             t2 = Table('table2')
             join = t.join(t2)
             join.condition = join.left.table_2 == join.right.id
-            sel = join.select(t.field1, t.field2, t2.name)
+            sel = join.select(t.field1.as_('field1'), t.field2.as_('field2'), t2.name.as_('table_2_name'))
             sel.where = And((join.right.code == 'XXX',))
             expect(tuple(sql)).to(equal(tuple(sel)))
 
@@ -54,7 +54,7 @@ with description('The OOQuery object'):
             t2 = Table('table2')
             join = t.join(t2)
             join.condition = join.left.table_2 == join.right.id
-            sel = join.select(t.field1, t.field2, t2.name)
+            sel = join.select(t.field1.as_('field1'), t.field2.as_('field2'), t2.name.as_('table_2_name'))
             expect(tuple(sql)).to(equal(tuple(sel)))
 
         with it('must support deep joins'):
@@ -92,7 +92,7 @@ with description('The OOQuery object'):
             join.condition = t.table_2_id == join.right.id
             join2 = join.join(t3)
             join2.condition = t2.table_3_id == join2.right.id
-            sel = join2.select(t.field1, t.field2, t3.name)
+            sel = join2.select(t.field1.as_('field1'), t.field2.as_('field2'), t3.name.as_('table_2_id_table_3_id_name'))
             sel.where = And((join2.right.code == 'XXX',))
             expect(tuple(sql)).to(equal(tuple(sel)))
             expect(q.parser.joins_map).to(have_len(2))
@@ -149,7 +149,7 @@ with description('The OOQuery object'):
             join3 = join2.join(t4)
             join3.condition = t.table_4_id == join3.right.id
 
-            sel = join3.select(t.field1, t.field2)
+            sel = join3.select(t.field1.as_('field1'), t.field2.as_('field2'))
             sel.where = And((
                 join3.right.failed == True,
                 join2.right.code == 'XXX',
@@ -162,7 +162,7 @@ with description('The OOQuery object'):
             sql = q.select(['a', 'b'], limit=10).where([])
 
             t = Table('table')
-            sel = t.select(t.a, t.b, limit=10)
+            sel = t.select(t.a.as_('a'), t.b.as_('b'), limit=10)
             expect(tuple(sql)).to(equal(tuple(sel)))
 
         with it('must support order'):
@@ -170,5 +170,26 @@ with description('The OOQuery object'):
             sql = q.select(['a', 'b'], order_by=('a.asc', 'b.desc')).where([])
 
             t = Table('table')
-            sel = t.select(t.a, t.b, order_by=(t.a.asc, t.b.desc))
+            sel = t.select(t.a.as_('a'), t.b.as_('b'), order_by=(t.a.asc, t.b.desc))
+            expect(tuple(sql)).to(equal(tuple(sel)))
+
+        with it('must support alias'):
+            def dummy_fk(table):
+                return {
+                    'table_2': {
+                        'constraint_name': 'fk_contraint_name',
+                        'table_name': 'table',
+                        'column_name': 'table_2',
+                        'foreign_table_name': 'table2',
+                        'foreign_column_name': 'id'
+                    }
+                }
+
+            q = OOQuery('table', dummy_fk)
+            sql = q.select(['field1', 'field2', 'table_2.name']).where([])
+            t = Table('table')
+            t2 = Table('table2')
+            join = t.join(t2)
+            join.condition = join.left.table_2 == join.right.id
+            sel = join.select(t.field1.as_('field1'), t.field2.as_('field2'), t2.name.as_('table_2_name'))
             expect(tuple(sql)).to(equal(tuple(sel)))

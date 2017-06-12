@@ -32,9 +32,10 @@ class OOQuery(object):
                 join = self.parser.joins_map.get(path)
                 if join:
                     table = join.right
-                    fields.append(getattr(table, field.split('.')[-1]))
+                    table_field = getattr(table, field.split('.')[-1])
             else:
-                fields.append(getattr(self.table, field))
+                table_field = getattr(self.table, field)
+            fields.append(table_field.as_(field.replace('.', '_')))
         return fields
 
     def select(self, fields=None, **kwargs):
