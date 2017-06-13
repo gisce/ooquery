@@ -8,6 +8,8 @@ Python 2.7 and >=3.5
     :target: https://travis-ci.org/gisce/ooquery
 .. image:: https://coveralls.io/repos/github/gisce/ooquery/badge.svg?branch=master
     :target: https://coveralls.io/github/gisce/ooquery?branch=master
+.. image:: https://img.shields.io/pypi/v/ooquery.svg
+    :target: https://pypi.python.org/pypi/ooquery
 
 
 Parsers OpenObjectes queries like:
