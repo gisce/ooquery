@@ -84,7 +84,7 @@ with description('A parser'):
             expect(p.joins_map).to(have_key('table_2'))
             expect(str(p.joins_map['table_2'])).to(equal(str(join)))
 
-        with it('must have a function to get a jon'):
+        with it('must have a function to get a join'):
             def dummy_fk(table):
                 if table == 'table':
                     return {
