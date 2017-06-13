@@ -10,8 +10,9 @@ class OOQuery(object):
     def __init__(self, table, foreign_key=None):
         self._fields = []
         self.table = Table(table)
+        self.foreign_key = foreign_key
         self._select = self.table.select()
-        self.parser = Parser(self.table, foreign_key)
+        self.parser = Parser(self.table, self.foreign_key)
         self.select_opts = {}
 
     @property
@@ -39,6 +40,7 @@ class OOQuery(object):
         return fields
 
     def select(self, fields=None, **kwargs):
+        self.parser = Parser(self.table, self.foreign_key)
         self._fields = fields
         self.select_opts = kwargs
         order_by = kwargs.pop('order_by', None)
