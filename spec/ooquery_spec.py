@@ -193,3 +193,28 @@ with description('The OOQuery object'):
             join.condition = join.left.table_2 == join.right.id
             sel = join.select(t.field1.as_('field1'), t.field2.as_('field2'), t2.name.as_('table_2_name'))
             expect(tuple(sql)).to(equal(tuple(sel)))
+
+        with context('on every select'):
+            with it('parser must be initialized'):
+                def dummy_fk(table):
+                    if table == 'table':
+                        return {
+                            'parent_id': {
+                                'constraint_name': 'fk_contraint_name',
+                                'table_name': 'table',
+                                'column_name': 'parent_id',
+                                'foreign_table_name': 'table',
+                                'foreign_column_name': 'id'
+                            },
+                        }
+
+
+                q = OOQuery('table', dummy_fk)
+                sql = q.select(['id', 'name']).where([
+                    ('parent_id.ean13', '=', '3020178572427')
+                ])
+                parser = q.parser
+                sql = q.select(['id', 'name']).where([
+                    ('parent_id.ean13', '=', '3020178572427')
+                ])
+                expect(q.parser).to(not_(equal(parser)))
