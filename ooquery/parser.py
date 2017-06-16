@@ -16,12 +16,8 @@ class Parser(object):
         self.joins_map = OrderedDict()
         self.foreign_key = foreign_key
 
-    def get_join(self, join):
-        for j in self.joins:
-            if str(j.right) == str(join.right):
-                if str(j.condition) == str(join.condition):
-                    return j
-        return None
+    def get_join(self, dottet_path):
+        return self.joins_map.get(dottet_path, None)
 
     @property
     def joins(self):
@@ -45,11 +41,12 @@ class Parser(object):
             column = getattr(table, fk['column_name'])
             fk_col = getattr(join.right, fk['foreign_column_name'])
             join.condition = Equal(column, fk_col)
-            join = self.get_join(join)
+            dotted_path = '.'.join(join_path)
+            join = self.get_join(dotted_path)
             if not join:
                 join = self.join_on.join(table_join)
                 join.condition = Equal(column, fk_col)
-                self.joins_map['.'.join(join_path)] = join
+                self.joins_map[dotted_path] = join
                 table = table_join
             else:
                 table = join.right
