@@ -194,6 +194,33 @@ with description('The OOQuery object'):
             sel = join.select(t.field1.as_('field1'), t.field2.as_('field2'), t2.name.as_('table_2_name'))
             expect(tuple(sql)).to(equal(tuple(sel)))
 
+        with it('must support recursive joins'):
+            def dummy_fk(table):
+                return {
+                    'parent_id': {
+                        'constraint_name': 'fk_contraint_name',
+                        'table_name': 'table',
+                        'column_name': 'parent_id',
+                        'foreign_table_name': 'table',
+                        'foreign_column_name': 'id'
+                    }
+                }
+
+            q = OOQuery('table', dummy_fk)
+            sql = q.select(['id']).where([
+                ('parent_id.parent_id.code', '=', 34)
+            ])
+            t = Table('table')
+            t2 = Table('table')
+            t3 = Table('table')
+            join = t.join(t2)
+            join.condition = t.parent_id == join.right.id
+            join2 = join.join(t3)
+            join2.condition = t2.parent_id == join2.right.id
+            sel = join2.select(t.id.as_('id'))
+            sel.where = And((t3.code == 34,))
+            expect(tuple(sql)).to(equal(tuple(sel)))
+
         with context('on every select'):
             with it('parser must be initialized'):
                 def dummy_fk(table):
