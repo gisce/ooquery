@@ -219,5 +219,7 @@ with description('A parser'):
             expect(p.joins).to(have_len(2))
             expect(p.joins_map).to(have_len(2))
 
-            expect(str(p.joins[1])).to(equal(str(custom_join)))
-            expect(p.joins[1]).to(equal(custom_join))
+            index = p.joins.index(custom_join)
+
+            expect(str(p.joins[index])).to(equal(str(custom_join)))
+            expect(p.joins[index]).to(equal(custom_join))
