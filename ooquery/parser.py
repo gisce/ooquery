@@ -14,14 +14,11 @@ class Parser(object):
         self.operators = OPERATORS_MAP
         self.table = table
         self.joins_map = OrderedDict()
+        self.joins = []
         self.foreign_key = foreign_key
 
     def get_join(self, dottet_path):
         return self.joins_map.get(dottet_path, None)
-
-    @property
-    def joins(self):
-        return list(self.joins_map.values())
 
     @property
     def join_on(self):
@@ -47,6 +44,7 @@ class Parser(object):
                 join = self.join_on.join(table_join)
                 join.condition = Equal(column, fk_col)
                 self.joins_map[dotted_path] = join
+                self.joins.append(join)
                 table = table_join
             else:
                 table = join.right
