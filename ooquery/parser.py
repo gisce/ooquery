@@ -47,6 +47,9 @@ class Parser(object):
                 self.joins.append(join)
                 table = table_join
             else:
+                if join not in self.joins:
+                    self.joins.append(join)
+
                 table = join.right
 
     def parse(self, query):
