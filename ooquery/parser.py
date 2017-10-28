@@ -30,6 +30,25 @@ class Parser(object):
         else:
             return self.table
 
+    def get_field_from_table(self, table, field):
+        return getattr(table, field)
+
+    def get_field_from_related_table(self, join_path_list, field_name):
+        self.parse_join(join_path_list)
+        path = '.'.join(join_path_list)
+        join = self.joins_map.get(path)
+        if join:
+            table = join.right
+            return self.get_field_from_table(table, field_name)
+
+    def get_table_field(self, field):
+        if '.' in field:
+            return self.get_field_from_related_table(
+                field.split('.')[:-1], field.split('.')[-1]
+            )
+        else:
+            return self.get_field_from_table(self.table, field)
+
     def parse_join(self, fields_join):
         table = self.table
         join_path = []
