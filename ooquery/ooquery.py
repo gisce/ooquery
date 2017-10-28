@@ -12,8 +12,11 @@ class OOQuery(object):
         self.table = Table(table)
         self.foreign_key = foreign_key
         self._select = self.table.select()
-        self.parser = Parser(self.table, self.foreign_key)
+        self.parser = self.create_parser()
         self.select_opts = {}
+
+    def create_parser(self):
+        return Parser(self.table, self.foreign_key)
 
     @property
     def select_on(self):
@@ -31,7 +34,7 @@ class OOQuery(object):
         return fields
 
     def select(self, fields=None, **kwargs):
-        self.parser = Parser(self.table, self.foreign_key)
+        self.parser = self.create_parser()
         self._fields = fields
         self.select_opts = kwargs
         order_by = kwargs.pop('order_by', None)
