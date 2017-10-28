@@ -41,13 +41,13 @@ class Parser(object):
             table = join.right
             return self.get_field_from_table(table, field_name)
 
-    def get_table_field(self, field):
+    def get_table_field(self, table, field):
         if '.' in field:
             return self.get_field_from_related_table(
                 field.split('.')[:-1], field.split('.')[-1]
             )
         else:
-            return self.get_field_from_table(self.table, field)
+            return self.get_field_from_table(table, field)
 
     def parse_join(self, fields_join):
         table = self.table

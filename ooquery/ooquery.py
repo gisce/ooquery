@@ -26,7 +26,7 @@ class OOQuery(object):
     def fields(self):
         fields = []
         for field in self._fields:
-            table_field = self.parser.get_table_field(field)
+            table_field = self.parser.get_table_field(self.table, field)
             fields.append(table_field.as_(field.replace('.', '_')))
         return fields
 
