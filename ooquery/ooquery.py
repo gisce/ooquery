@@ -22,20 +22,30 @@ class OOQuery(object):
         else:
             return self.table
 
+    def get_field_from_table(self, table, field):
+        return getattr(table, field)
+
+    def get_field_from_related_table(self, join_path_list, field_name):
+        self.parser.parse_join(join_path_list)
+        path = '.'.join(join_path_list)
+        join = self.parser.joins_map.get(path)
+        if join:
+            table = join.right
+            return self.get_field_from_table(table, field_name)
+
+    def get_table_field(self, field):
+        if '.' in field:
+            return self.get_field_from_related_table(
+                field.split('.')[:-1], field.split('.')[-1]
+            )
+        else:
+            return self.get_field_from_table(self.table, field)
+
     @property
     def fields(self):
         fields = []
         for field in self._fields:
-            if '.' in field:
-                join_path = field.split('.')[:-1]
-                self.parser.parse_join(join_path)
-                path = '.'.join(join_path)
-                join = self.parser.joins_map.get(path)
-                if join:
-                    table = join.right
-                    table_field = getattr(table, field.split('.')[-1])
-            else:
-                table_field = getattr(self.table, field)
+            table_field = self.get_table_field(field)
             fields.append(table_field.as_(field.replace('.', '_')))
         return fields
 
