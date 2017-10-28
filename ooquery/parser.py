@@ -79,13 +79,13 @@ class Parser(object):
                 raise InvalidExpressionException
             if Expression.is_expression(expression):
                 field = expression[0]
-                column = getattr(self.table, field)
+                column = self.get_table_field(self.table, field)
                 if '.' in field:
                     fields_join = field.split('.')[:-1]
                     field_join = field.split('.')[-1]
                     self.parse_join(fields_join)
                     join = self.joins_map['.'.join(field.split('.')[:-1])]
-                    column = getattr(join.right, field_join)
+                    column = self.get_table_field(join.right, field_join)
                 expression = Expression(expression)
                 expression.left = column
                 result.append(expression.expression)
