@@ -141,3 +141,85 @@ with description('A parser'):
                 join2.right.code == 'XXX',
                 join.right.state == 'open'
             ))
+        with it('must allow for predefined joins'):
+            def dummy_fk(table):
+                return {
+                    'table_2': {
+                        'constraint_name': 'fk_contraint_name',
+                        'table_name': 'table',
+                        'column_name': 'table_2',
+                        'foreign_table_name': 'table2',
+                        'foreign_column_name': 'id'
+                    },
+                    'table_3': {
+                        'constraint_name': 'fk_contraint_name',
+                        'table_name': 'table',
+                        'column_name': 'table_3',
+                        'foreign_table_name': 'table3',
+                        'foreign_column_name': 'id'
+                    }
+                }
+
+            t = Table('table')
+            t3 = Table('table3')
+            p = Parser(t, dummy_fk)
+
+            expect(p.joins).to(have_len(0))
+            expect(p.joins_map).to(have_len(0))
+
+            custom_join = t.join(t3)
+            custom_join.condition = t.table_3 == custom_join.right.id
+            p.joins_map['table_3'] = custom_join
+
+            expect(p.joins).to(have_len(0))
+            expect(p.joins_map).to(have_len(1))
+
+            x = p.parse([('table_2.code', '=', 'XXX')])
+
+            expect(p.joins).to(have_len(1))
+            expect(p.joins_map).to(have_len(2))
+
+            join = t.join(Table('table2'))
+            join.condition = join.left.table_2 == join.right.id
+
+            expect(str(p.joins[0])).to(equal(str(join)))
+            expect(p.joins_map).to(have_key('table_2'))
+            expect(str(p.joins_map['table_2'])).to(equal(str(join)))
+        with it('it must allow custom joins to be added to the search'):
+            def dummy_fk(table):
+                return {
+                    'table_2': {
+                        'constraint_name': 'fk_contraint_name',
+                        'table_name': 'table',
+                        'column_name': 'table_2',
+                        'foreign_table_name': 'table2',
+                        'foreign_column_name': 'id'
+                    },
+                    'table_3': {
+                        'constraint_name': 'fk_contraint_name',
+                        'table_name': 'table',
+                        'column_name': 'table_3',
+                        'foreign_table_name': 'table3',
+                        'foreign_column_name': 'id'
+                    }
+                }
+
+            t = Table('table')
+            t3 = Table('table3')
+            p = Parser(t, dummy_fk)
+
+            custom_join = t.join(t3)
+            custom_join.condition = t.table_3 == custom_join.right.id
+            p.joins_map['table_3'] = custom_join
+
+            x = p.parse(
+                [('table_2.code', '=', 'XXX'), ('table_3.code', '=', 'YYY')]
+            )
+
+            expect(p.joins).to(have_len(2))
+            expect(p.joins_map).to(have_len(2))
+
+            index = p.joins.index(custom_join)
+
+            expect(str(p.joins[index])).to(equal(str(custom_join)))
+            expect(p.joins[index]).to(equal(custom_join))

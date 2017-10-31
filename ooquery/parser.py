@@ -14,14 +14,12 @@ class Parser(object):
         self.operators = OPERATORS_MAP
         self.table = table
         self.joins_map = OrderedDict()
+        self.joins = []
+        self.join_path = []
         self.foreign_key = foreign_key
 
     def get_join(self, dottet_path):
         return self.joins_map.get(dottet_path, None)
-
-    @property
-    def joins(self):
-        return list(self.joins_map.values())
 
     @property
     def join_on(self):
@@ -51,23 +49,27 @@ class Parser(object):
 
     def parse_join(self, fields_join):
         table = self.table
-        join_path = []
+        self.join_path = []
         for field_join in fields_join:
-            join_path.append(field_join)
+            self.join_path.append(field_join)
             fk = self.foreign_key(table._name)[field_join]
             table_join = Table(fk['foreign_table_name'])
             join = Join(self.join_on, table_join)
             column = getattr(table, fk['column_name'])
             fk_col = getattr(join.right, fk['foreign_column_name'])
             join.condition = Equal(column, fk_col)
-            dotted_path = '.'.join(join_path)
+            dotted_path = '.'.join(self.join_path)
             join = self.get_join(dotted_path)
             if not join:
                 join = self.join_on.join(table_join)
                 join.condition = Equal(column, fk_col)
                 self.joins_map[dotted_path] = join
+                self.joins.append(join)
                 table = table_join
             else:
+                if join not in self.joins:
+                    self.joins.append(join)
+
                 table = join.right
 
     def parse(self, query):
