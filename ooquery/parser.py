@@ -15,9 +15,8 @@ class Parser(object):
         self.table = table
         self.joins_map = OrderedDict()
         self.joins = []
-        self.foreign_key = foreign_key
-
         self.join_path = []
+        self.foreign_key = foreign_key
 
     def get_join(self, dottet_path):
         return self.joins_map.get(dottet_path, None)
