@@ -12,8 +12,11 @@ class OOQuery(object):
         self.table = Table(table)
         self.foreign_key = foreign_key
         self._select = self.table.select()
-        self.parser = Parser(self.table, self.foreign_key)
+        self.parser = self.create_parser()
         self.select_opts = {}
+
+    def create_parser(self):
+        return Parser(self.table, self.foreign_key)
 
     @property
     def select_on(self):
@@ -26,21 +29,12 @@ class OOQuery(object):
     def fields(self):
         fields = []
         for field in self._fields:
-            if '.' in field:
-                join_path = field.split('.')[:-1]
-                self.parser.parse_join(join_path)
-                path = '.'.join(join_path)
-                join = self.parser.joins_map.get(path)
-                if join:
-                    table = join.right
-                    table_field = getattr(table, field.split('.')[-1])
-            else:
-                table_field = getattr(self.table, field)
+            table_field = self.parser.get_table_field(self.table, field)
             fields.append(table_field.as_(field.replace('.', '_')))
         return fields
 
     def select(self, fields=None, **kwargs):
-        self.parser = Parser(self.table, self.foreign_key)
+        self.parser = self.create_parser()
         self._fields = fields
         self.select_opts = kwargs
         order_by = kwargs.pop('order_by', None)
