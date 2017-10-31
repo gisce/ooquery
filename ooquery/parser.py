@@ -30,6 +30,25 @@ class Parser(object):
         else:
             return self.table
 
+    def get_field_from_table(self, table, field):
+        return getattr(table, field)
+
+    def get_field_from_related_table(self, join_path_list, field_name):
+        self.parse_join(join_path_list)
+        path = '.'.join(join_path_list)
+        join = self.joins_map.get(path)
+        if join:
+            table = join.right
+            return self.get_field_from_table(table, field_name)
+
+    def get_table_field(self, table, field):
+        if '.' in field:
+            return self.get_field_from_related_table(
+                field.split('.')[:-1], field.split('.')[-1]
+            )
+        else:
+            return self.get_field_from_table(table, field)
+
     def parse_join(self, fields_join):
         table = self.table
         join_path = []
@@ -60,13 +79,13 @@ class Parser(object):
                 raise InvalidExpressionException
             if Expression.is_expression(expression):
                 field = expression[0]
-                column = getattr(self.table, field)
+                column = self.get_table_field(self.table, field)
                 if '.' in field:
                     fields_join = field.split('.')[:-1]
                     field_join = field.split('.')[-1]
                     self.parse_join(fields_join)
                     join = self.joins_map['.'.join(field.split('.')[:-1])]
-                    column = getattr(join.right, field_join)
+                    column = self.get_table_field(join.right, field_join)
                 expression = Expression(expression)
                 expression.left = column
                 result.append(expression.expression)
