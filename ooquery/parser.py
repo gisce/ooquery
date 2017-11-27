@@ -72,6 +72,24 @@ class Parser(object):
 
                 table = join.right
 
+    def create_expressions(self, expression, column):
+        expression = Expression(expression)
+        expression.left = column
+
+        return [expression.expression]
+
+    def get_expressions(self, expression):
+        field = expression[0]
+        column = self.get_table_field(self.table, field)
+        if '.' in field:
+            fields_join = field.split('.')[:-1]
+            field_join = field.split('.')[-1]
+            self.parse_join(fields_join)
+            join = self.joins_map['.'.join(field.split('.')[:-1])]
+            column = self.get_table_field(join.right, field_join)
+
+        return self.create_expressions(expression, column)
+
     def parse(self, query):
         result = []
         while query:
@@ -80,17 +98,7 @@ class Parser(object):
                     and expression not in self.operators):
                 raise InvalidExpressionException
             if Expression.is_expression(expression):
-                field = expression[0]
-                column = self.get_table_field(self.table, field)
-                if '.' in field:
-                    fields_join = field.split('.')[:-1]
-                    field_join = field.split('.')[-1]
-                    self.parse_join(fields_join)
-                    join = self.joins_map['.'.join(field.split('.')[:-1])]
-                    column = self.get_table_field(join.right, field_join)
-                expression = Expression(expression)
-                expression.left = column
-                result.append(expression.expression)
+                result += self.get_expressions(expression)
             else:
                 op = self.operators[expression]
                 q = []
