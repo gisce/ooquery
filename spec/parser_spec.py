@@ -60,8 +60,8 @@ with description('A parser'):
     with context('if an expression have joins'):
         with it('the parser must have the joins of all the expressions'):
 
-            def dummy_fk(table):
-                return {
+            def dummy_fk(table, field):
+                fks = {
                     'table_2': {
                         'constraint_name': 'fk_contraint_name',
                         'table_name': 'table',
@@ -70,6 +70,7 @@ with description('A parser'):
                         'foreign_column_name': 'id'
                     }
                 }
+                return fks[field]
 
             t = Table('table')
             p = Parser(t, dummy_fk)
@@ -85,9 +86,9 @@ with description('A parser'):
             expect(str(p.joins_map['table_2'])).to(equal(str(join)))
 
         with it('must have a function to get a join'):
-            def dummy_fk(table):
+            def dummy_fk(table, field):
                 if table == 'table':
-                    return {
+                    fks = {
                         'table_2_id': {
                             'constraint_name': 'fk_contraint_name',
                             'table_name': 'table',
@@ -104,7 +105,7 @@ with description('A parser'):
                         }
                     }
                 elif table == 'table2':
-                    return {
+                    fks = {
                         'table_3_id': {
                             'constraint_name': 'fk_contraint_name',
                             'table_name': 'table2',
@@ -113,6 +114,7 @@ with description('A parser'):
                             'foreign_column_name': 'id'
                         }
                     }
+                return fks[field]
 
 
             t = Table('table')
@@ -142,8 +144,8 @@ with description('A parser'):
                 join.right.state == 'open'
             ))
         with it('must allow for predefined joins'):
-            def dummy_fk(table):
-                return {
+            def dummy_fk(table, field):
+                fks = {
                     'table_2': {
                         'constraint_name': 'fk_contraint_name',
                         'table_name': 'table',
@@ -159,6 +161,7 @@ with description('A parser'):
                         'foreign_column_name': 'id'
                     }
                 }
+                return fks[field]
 
             t = Table('table')
             t3 = Table('table3')
@@ -186,8 +189,8 @@ with description('A parser'):
             expect(p.joins_map).to(have_key('table_2'))
             expect(str(p.joins_map['table_2'])).to(equal(str(join)))
         with it('it must allow custom joins to be added to the search'):
-            def dummy_fk(table):
-                return {
+            def dummy_fk(table, field):
+                fks = {
                     'table_2': {
                         'constraint_name': 'fk_contraint_name',
                         'table_name': 'table',
@@ -203,6 +206,7 @@ with description('A parser'):
                         'foreign_column_name': 'id'
                     }
                 }
+                return fks[field]
 
             t = Table('table')
             t3 = Table('table3')

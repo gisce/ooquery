@@ -25,8 +25,8 @@ with description('The OOQuery object'):
             expect(tuple(sql)).to(equal(tuple(sel)))
 
         with it('must support joins'):
-            def dummy_fk(table):
-                return {
+            def dummy_fk(table, field):
+                fks = {
                     'table_2': {
                         'constraint_name': 'fk_contraint_name',
                         'table_name': 'table',
@@ -35,6 +35,7 @@ with description('The OOQuery object'):
                         'foreign_column_name': 'id'
                     }
                 }
+                return fks[field]
 
             q = OOQuery('table', dummy_fk)
             sql = q.select(['field1', 'field2', 'table_2.name']).where([
@@ -58,9 +59,9 @@ with description('The OOQuery object'):
             expect(tuple(sql)).to(equal(tuple(sel)))
 
         with it('must support deep joins'):
-            def dummy_fk(table):
+            def dummy_fk(table, field):
                 if table == 'table':
-                    return {
+                    fks = {
                         'table_2_id': {
                             'constraint_name': 'fk_contraint_name',
                             'table_name': 'table',
@@ -70,7 +71,7 @@ with description('The OOQuery object'):
                         }
                     }
                 elif table == 'table2':
-                    return {
+                    fks = {
                     'table_3_id': {
                         'constraint_name': 'fk_contraint_name',
                         'table_name': 'table2',
@@ -79,6 +80,7 @@ with description('The OOQuery object'):
                         'foreign_column_name': 'id'
                     }
                 }
+                return fks[field]
 
 
             q = OOQuery('table', dummy_fk)
@@ -100,9 +102,9 @@ with description('The OOQuery object'):
             expect(str(q.parser.joins_map['table_2_id.table_3_id'])).to(equal(str(join2)))
 
         with it('must support multiple deep joins'):
-            def dummy_fk(table):
+            def dummy_fk(table, field):
                 if table == 'table':
-                    return {
+                    fks = {
                         'table_2_id': {
                             'constraint_name': 'fk_contraint_name',
                             'table_name': 'table',
@@ -119,7 +121,7 @@ with description('The OOQuery object'):
                         }
                     }
                 elif table == 'table2':
-                    return {
+                    fks = {
                         'table_3_id': {
                             'constraint_name': 'fk_contraint_name',
                             'table_name': 'table2',
@@ -128,6 +130,7 @@ with description('The OOQuery object'):
                             'foreign_column_name': 'id'
                         }
                     }
+                return fks[field]
 
 
             q = OOQuery('table', dummy_fk)
@@ -174,8 +177,8 @@ with description('The OOQuery object'):
             expect(tuple(sql)).to(equal(tuple(sel)))
 
         with it('must support alias'):
-            def dummy_fk(table):
-                return {
+            def dummy_fk(table, field):
+                fks = {
                     'table_2': {
                         'constraint_name': 'fk_contraint_name',
                         'table_name': 'table',
@@ -184,6 +187,7 @@ with description('The OOQuery object'):
                         'foreign_column_name': 'id'
                     }
                 }
+                return fks[field]
 
             q = OOQuery('table', dummy_fk)
             sql = q.select(['field1', 'field2', 'table_2.name']).where([])
@@ -195,8 +199,8 @@ with description('The OOQuery object'):
             expect(tuple(sql)).to(equal(tuple(sel)))
 
         with it('must support recursive joins'):
-            def dummy_fk(table):
-                return {
+            def dummy_fk(table, field):
+                fks = {
                     'parent_id': {
                         'constraint_name': 'fk_contraint_name',
                         'table_name': 'table',
@@ -205,6 +209,7 @@ with description('The OOQuery object'):
                         'foreign_column_name': 'id'
                     }
                 }
+                return fks[field]
 
             q = OOQuery('table', dummy_fk)
             sql = q.select(['id']).where([
@@ -223,9 +228,9 @@ with description('The OOQuery object'):
 
         with context('on every select'):
             with it('parser must be initialized'):
-                def dummy_fk(table):
+                def dummy_fk(table, field):
                     if table == 'table':
-                        return {
+                        fks = {
                             'parent_id': {
                                 'constraint_name': 'fk_contraint_name',
                                 'table_name': 'table',
@@ -234,6 +239,7 @@ with description('The OOQuery object'):
                                 'foreign_column_name': 'id'
                             },
                         }
+                        return fks[field]
 
 
                 q = OOQuery('table', dummy_fk)
