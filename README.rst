@@ -23,8 +23,9 @@ Parsers OpenObjectes queries like:
 
    conn = psycopg2.connect("dbname=test user=postgres")
    with conn.cursor() as cursor:
-       def fk_function(table):
-           return get_foreign_keys(cursor, table)
+       def fk_function(table, field):
+           fks = get_foreign_keys(cursor, table)
+           return fks[field]
 
        q = OOQuery('account_invoice', fk_function)
        sql = q.select(['number', 'state']).where([
