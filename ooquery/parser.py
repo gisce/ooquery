@@ -52,7 +52,7 @@ class Parser(object):
         self.join_path = []
         for field_join in fields_join:
             self.join_path.append(field_join)
-            fk = self.foreign_key(table._name)[field_join]
+            fk = self.foreign_key(table._name, field_join)
             table_join = Table(fk['foreign_table_name'])
             join = Join(self.join_on, table_join)
             column = getattr(table, fk['column_name'])
