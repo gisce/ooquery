@@ -30,7 +30,7 @@ class OOQuery(object):
         fields = []
         for field in self._fields:
             table_field = self.parser.get_table_field(self.table, field)
-            fields.append(table_field.as_(field.replace('.', '_')))
+            fields.append(table_field.as_(field))
         return fields
 
     def select(self, fields=None, **kwargs):
