@@ -12,7 +12,7 @@ with description('A parser'):
         self.t = Table('table')
         self.p = Parser(self.t)
 
-    with it('parsing a query the origina must be keeped'):
+    with it('parsing a query the original must be keeped'):
         domain = [('a', '=', 'b')]
         domain_orig = domain[:]
         x = self.p.parse(domain)
