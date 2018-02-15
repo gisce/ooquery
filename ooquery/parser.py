@@ -92,6 +92,7 @@ class Parser(object):
 
     def parse(self, query):
         result = []
+        query = query[:]
         while query:
             expression = query.pop()
             if (not Expression.is_expression(expression)

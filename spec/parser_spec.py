@@ -12,6 +12,12 @@ with description('A parser'):
         self.t = Table('table')
         self.p = Parser(self.t)
 
+    with it('parsing a query the origina must be keeped'):
+        domain = [('a', '=', 'b')]
+        domain_orig = domain[:]
+        x = self.p.parse(domain)
+        expect(domain).to(equal(domain_orig))
+
     with it("with a simple notation [('a', '=', 'b')]"):
         x = self.p.parse([('a', '=', 'b')])
         op = And((Equal(self.t.a, 'b') ,))
