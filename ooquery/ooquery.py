@@ -3,6 +3,7 @@ from __future__ import absolute_import
 from functools import reduce
 
 from sql import Table
+from sql.aggregate import Aggregate
 from ooquery.parser import Parser
 
 
@@ -29,7 +30,14 @@ class OOQuery(object):
     def fields(self):
         fields = []
         for field in self._fields:
+            aggr = None
+            if isinstance(field, Aggregate):
+                aggr = field.__class__
+                field = field.expression
             table_field = self.parser.get_table_field(self.table, field)
+            if aggr:
+                table_field = aggr(table_field)
+                field = '{}_{}'.format(aggr._sql, field).lower()
             fields.append(table_field.as_(field))
         return fields
 
@@ -38,11 +46,21 @@ class OOQuery(object):
         self._fields = fields
         self.select_opts = kwargs
         order_by = kwargs.pop('order_by', None)
+        group_by = kwargs.pop('group_by', None)
         if order_by:
             kwargs['order_by'] = []
             for item in order_by:
                 kwargs['order_by'].append(
                     reduce(getattr, item.split('.'), self.select_on)
+                )
+        if group_by:
+            kwargs['group_by'] = []
+            for item in group_by:
+                table_field = table_field = self.parser.get_table_field(
+                    self.table, item
+                )
+                kwargs['group_by'].append(
+                    table_field
                 )
         self._select = self.select_on.select(*self.fields, **self.select_opts)
         return self
