@@ -2,6 +2,7 @@
 from ooquery import OOQuery
 from sql import Table
 from sql.operators import *
+from sql.aggregate import *
 
 from expects import *
 
@@ -224,6 +225,77 @@ with description('The OOQuery object'):
             join2.condition = t2.parent_id == join2.right.id
             sel = join2.select(t.id.as_('id'))
             sel.where = And((t3.code == 34,))
+            expect(tuple(sql)).to(equal(tuple(sel)))
+
+        with it('must support group by'):
+            q = OOQuery('table')
+            sel = q.select([Max('field1')], group_by=['field2'])
+            sel2 = q.table.select(
+                Max(q.table.field1).as_('max_field1'),
+                group_by=[q.table.field2]
+            )
+            expect(str(sel._select)).to(equal(str(sel2)))
+
+        with it('must support group by in joined queries'):
+            def dummy_fk(table, field):
+                if table == 'table':
+                    fks = {
+                        'table_2_id': {
+                            'constraint_name': 'fk_contraint_name',
+                            'table_name': 'table',
+                            'column_name': 'table_2_id',
+                            'foreign_table_name': 'table2',
+                            'foreign_column_name': 'id'
+                        },
+                        'table_4_id': {
+                            'constraint_name': 'fk_contraint_name',
+                            'table_name': 'table',
+                            'column_name': 'table_4_id',
+                            'foreign_table_name': 'table4',
+                            'foreign_column_name': 'id'
+                        }
+                    }
+                elif table == 'table2':
+                    fks = {
+                        'table_3_id': {
+                            'constraint_name': 'fk_contraint_name',
+                            'table_name': 'table2',
+                            'column_name': 'table_3_id',
+                            'foreign_table_name': 'table3',
+                            'foreign_column_name': 'id'
+                        }
+                    }
+                return fks[field]
+
+
+            q = OOQuery('table', dummy_fk)
+            sql = q.select([Max('field1')], group_by=['table_2_id.code']).where([
+                ('table_4_id.failed', '=', True),
+                ('table_2_id.table_3_id.code', '=', 'XXX'),
+                ('table_2_id.state', '=', 'open'),
+            ])
+            t = Table('table')
+            t2 = Table('table2')
+            t3 = Table('table3')
+            t4 = Table('table4')
+            join = t.join(t2)
+            join.condition = t.table_2_id == join.right.id
+
+            join2 = join.join(t3)
+            join2.condition = t2.table_3_id == join2.right.id
+
+            join3 = join2.join(t4)
+            join3.condition = t.table_4_id == join3.right.id
+
+            sel = join3.select(
+                Max(t.field1).as_('max_field1'),
+                group_by=[t2.code]
+            )
+            sel.where = And((
+                join3.right.failed == True,
+                join2.right.code == 'XXX',
+                join.right.state == 'open'
+            ))
             expect(tuple(sql)).to(equal(tuple(sel)))
 
         with context('on every select'):
