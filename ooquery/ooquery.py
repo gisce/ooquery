@@ -50,9 +50,10 @@ class OOQuery(object):
         if order_by:
             kwargs['order_by'] = []
             for item in order_by:
-                kwargs['order_by'].append(
-                    reduce(getattr, item.split('.'), self.select_on)
-                )
+                field, order = item.rsplit('.', 1)
+                field = self.parser.get_table_field(self.table, field)
+                order = getattr(field, order)
+                kwargs['order_by'].append(order)
         if group_by:
             kwargs['group_by'] = []
             for item in group_by:
