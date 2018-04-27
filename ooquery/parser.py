@@ -2,7 +2,7 @@
 from __future__ import absolute_import
 from collections import OrderedDict
 
-from sql import Table, Join
+from sql import Table, Join, Literal
 from sql.operators import Equal
 
 from ooquery.operators import *
@@ -72,23 +72,30 @@ class Parser(object):
 
                 table = join.right
 
-    def create_expressions(self, expression, column):
+    def create_expressions(self, expression, column_left, column_righ=None):
         expression = Expression(expression)
-        expression.left = column
+        expression.left = column_left
+        if column_righ:
+            expression.rigth = column_righ
 
         return [expression.expression]
 
     def get_expressions(self, expression):
-        field = expression[0]
-        column = self.get_table_field(self.table, field)
-        if '.' in field:
-            fields_join = field.split('.')[:-1]
-            field_join = field.split('.')[-1]
-            self.parse_join(fields_join)
-            join = self.joins_map['.'.join(field.split('.')[:-1])]
-            column = self.get_table_field(join.right, field_join)
+        fields = [expression[0]]
+        columns = []
+        if not isinstance(expression[2], Literal):
+            fields.append(expression[2])
 
-        return self.create_expressions(expression, column)
+        for idx, field in enumerate(fields):
+            columns.append(self.get_table_field(self.table, field))
+            if '.' in field:
+                fields_join = field.split('.')[:-1]
+                field_join = field.split('.')[-1]
+                self.parse_join(fields_join)
+                join = self.joins_map['.'.join(field.split('.')[:-1])]
+                columns[idx] = self.get_table_field(join.right, field_join)
+
+        return self.create_expressions(expression, *columns)
 
     def parse(self, query):
         result = []

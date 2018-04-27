@@ -1,6 +1,6 @@
 # coding=utf-8
 from ooquery import OOQuery
-from sql import Table
+from sql import Table, Literal
 from sql.operators import *
 from sql.aggregate import *
 
@@ -19,10 +19,18 @@ with description('The OOQuery object'):
             expect(str(sel._select)).to(equal(str(sel2)))
         with it('should have a where method to pass the domain'):
             q = OOQuery('table')
-            sql = q.select(['field1', 'field2']).where([('field3', '=', 4)])
+            sql = q.select(['field1', 'field2']).where([('field3', '=', Literal(4))])
             t = Table('table')
             sel = t.select(t.field1.as_('field1'), t.field2.as_('field2'))
             sel.where = And((t.field3 == 4,))
+            expect(tuple(sql)).to(equal(tuple(sel)))
+
+        with it('should have where mehtod and compare two fields of the table'):
+            q = OOQuery('table')
+            sql = q.select(['field1', 'field2']).where([('field3', '>', 'field4')])
+            t = Table('table')
+            sel = t.select(t.field1.as_('field1'), t.field2.as_('field2'))
+            sel.where = And((t.field3 > t.field4,))
             expect(tuple(sql)).to(equal(tuple(sel)))
 
         with it('must support joins'):
@@ -40,7 +48,7 @@ with description('The OOQuery object'):
 
             q = OOQuery('table', dummy_fk)
             sql = q.select(['field1', 'field2', 'table_2.name']).where([
-                ('table_2.code', '=', 'XXX')
+                ('table_2.code', '=', Literal('XXX'))
             ])
             t = Table('table')
             t2 = Table('table2')
@@ -86,7 +94,7 @@ with description('The OOQuery object'):
 
             q = OOQuery('table', dummy_fk)
             sql = q.select(['field1', 'field2', 'table_2_id.table_3_id.name']).where([
-                ('table_2_id.table_3_id.code', '=', 'XXX')
+                ('table_2_id.table_3_id.code', '=', Literal('XXX'))
             ])
             t = Table('table')
             t2 = Table('table2')
@@ -136,9 +144,9 @@ with description('The OOQuery object'):
 
             q = OOQuery('table', dummy_fk)
             sql = q.select(['field1', 'field2']).where([
-                ('table_4_id.failed', '=', True),
-                ('table_2_id.table_3_id.code', '=', 'XXX'),
-                ('table_2_id.state', '=', 'open'),
+                ('table_4_id.failed', '=', Literal(True)),
+                ('table_2_id.table_3_id.code', '=', Literal('XXX')),
+                ('table_2_id.state', '=', Literal('open')),
             ])
             t = Table('table')
             t2 = Table('table2')
@@ -214,7 +222,7 @@ with description('The OOQuery object'):
 
             q = OOQuery('table', dummy_fk)
             sql = q.select(['id']).where([
-                ('parent_id.parent_id.code', '=', 34)
+                ('parent_id.parent_id.code', '=', Literal(34))
             ])
             t = Table('table')
             t2 = Table('table')
@@ -270,9 +278,9 @@ with description('The OOQuery object'):
 
             q = OOQuery('table', dummy_fk)
             sql = q.select([Max('field1')], group_by=['table_2_id.code']).where([
-                ('table_4_id.failed', '=', True),
-                ('table_2_id.table_3_id.code', '=', 'XXX'),
-                ('table_2_id.state', '=', 'open'),
+                ('table_4_id.failed', '=', Literal(True)),
+                ('table_2_id.table_3_id.code', '=', Literal('XXX')),
+                ('table_2_id.state', '=', Literal('open')),
             ])
             t = Table('table')
             t2 = Table('table2')
@@ -316,10 +324,10 @@ with description('The OOQuery object'):
 
                 q = OOQuery('table', dummy_fk)
                 sql = q.select(['id', 'name']).where([
-                    ('parent_id.ean13', '=', '3020178572427')
+                    ('parent_id.ean13', '=', Literal('3020178572427'))
                 ])
                 parser = q.parser
                 sql = q.select(['id', 'name']).where([
-                    ('parent_id.ean13', '=', '3020178572427')
+                    ('parent_id.ean13', '=', Literal('3020178572427'))
                 ])
                 expect(q.parser).to(not_(equal(parser)))
