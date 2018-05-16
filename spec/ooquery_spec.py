@@ -237,6 +237,12 @@ with description('The OOQuery object'):
             )
             expect(str(sel._select)).to(equal(str(sel2)))
 
+        with it('must support concat'):
+            q = OOQuery('table')
+            sel = q.select([Concat('field1', Literal(' 01:00'))])
+            sel2 = q.table.select(Concat(q.table.field1, ' 01:00'))
+            expect(str(sel._select)).to(equal(str(sel2)))
+
         with it('must support coalesce'):
             q = OOQuery('table')
             sel = q.select([Coalesce('field1', Literal(3))])

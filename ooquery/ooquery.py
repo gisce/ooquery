@@ -5,6 +5,7 @@ from functools import reduce
 from sql import Table, Literal
 from sql.aggregate import Aggregate
 from sql.conditionals import Conditional
+from sql.operators import Operator
 from ooquery.parser import Parser
 
 
@@ -48,6 +49,17 @@ class OOQuery(object):
                         param = param.value
                     params.append(param)
                 table_field = cond(*params)
+                fields.append(table_field)
+            elif isinstance(field, Operator):
+                operator = field.__class__
+                operands = []
+                for operand in field._operands:
+                    if not isinstance(operand, Literal):
+                        operand = self.parser.get_table_field(self.table, operand)
+                    else:
+                        operand = operand.value
+                    operands.append(operand)
+                table_field = operator(*operands)
                 fields.append(table_field)
             else:
                 table_field = self.parser.get_table_field(self.table, field)
