@@ -6,7 +6,7 @@ from sql import Table, Join, Literal
 from sql.operators import Equal
 
 from ooquery.operators import *
-from ooquery.expression import Expression, InvalidExpressionException
+from ooquery.expression import Expression, InvalidExpressionException, Field
 
 
 class Parser(object):
@@ -83,8 +83,8 @@ class Parser(object):
     def get_expressions(self, expression):
         fields = [expression[0]]
         columns = []
-        if not isinstance(expression[2], Literal):
-            fields.append(expression[2])
+        if isinstance(expression[2], Field):
+            fields.append(expression[2].name)
 
         for idx, field in enumerate(fields):
             columns.append(self.get_table_field(self.table, field))
