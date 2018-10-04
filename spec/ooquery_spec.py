@@ -248,8 +248,7 @@ with description('The OOQuery object'):
 
         with it('must support concat'):
             q = OOQuery('table')
-            sel = q.select([Concat('field1', 
-                                   (' 01:00'))])
+            sel = q.select([Concat('field1', Literal(' 01:00'))])
             sel2 = q.table.select(Concat(q.table.field1, ' 01:00'))
             expect(str(sel._select)).to(equal(str(sel2)))
 
