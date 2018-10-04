@@ -2,8 +2,10 @@
 from __future__ import absolute_import
 from functools import reduce
 
-from sql import Table
+from sql import Table, Literal
 from sql.aggregate import Aggregate
+from sql.conditionals import Conditional
+from sql.operators import Operator
 from ooquery.parser import Parser
 
 
@@ -30,15 +32,38 @@ class OOQuery(object):
     def fields(self):
         fields = []
         for field in self._fields:
-            aggr = None
             if isinstance(field, Aggregate):
                 aggr = field.__class__
                 field = field.expression
-            table_field = self.parser.get_table_field(self.table, field)
-            if aggr:
+                table_field = self.parser.get_table_field(self.table, field)
                 table_field = aggr(table_field)
                 field = '{}_{}'.format(aggr._sql, field).lower()
-            fields.append(table_field.as_(field))
+                fields.append(table_field.as_(field))
+            elif isinstance(field, Conditional):
+                cond = field.__class__
+                params = []
+                for param in field.values:
+                    if not isinstance(param, Literal):
+                        param = self.parser.get_table_field(self.table, param)
+                    else:
+                        param = param.value
+                    params.append(param)
+                table_field = cond(*params)
+                fields.append(table_field)
+            elif isinstance(field, Operator):
+                operator = field.__class__
+                operands = []
+                for operand in field._operands:
+                    if not isinstance(operand, Literal):
+                        operand = self.parser.get_table_field(self.table, operand)
+                    else:
+                        operand = operand.value
+                    operands.append(operand)
+                table_field = operator(*operands)
+                fields.append(table_field)
+            else:
+                table_field = self.parser.get_table_field(self.table, field)
+                fields.append(table_field.as_(field))
         return fields
 
     def select(self, fields=None, **kwargs):
