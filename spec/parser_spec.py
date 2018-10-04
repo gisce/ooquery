@@ -1,5 +1,5 @@
 # coding=utf-8
-from sql import Table, Literal
+from sql import Table
 from sql.operators import *
 from ooquery.parser import Parser
 from ooquery.expression import InvalidExpressionException
@@ -13,30 +13,30 @@ with description('A parser'):
         self.p = Parser(self.t)
 
     with it('parsing a query the original must be keeped'):
-        domain = [('a', '=', Literal('b'))]
+        domain = [('a', '=', 'b')]
         domain_orig = domain[:]
         x = self.p.parse(domain)
         expect(domain).to(equal(domain_orig))
 
     with it("with a simple notation [('a', '=', 'b')]"):
-        x = self.p.parse([('a', '=', Literal('b'))])
+        x = self.p.parse([('a', '=', 'b')])
         op = And((Equal(self.t.a, 'b') ,))
         expect(x).to(equal(op))
 
     with it('must use And as default operator'):
-        parsed = self.p.parse([('a', '=', Literal(1)), ('b', '=', Literal(2))])
+        parsed = self.p.parse([('a', '=', 1), ('b', '=', 2)])
         op = And((Equal(self.t.a, 1), Equal(self.t.b, 1)))
         expect(parsed).to(equal(op))
 
     with it('must support or of two operators'):
-        parsed = self.p.parse(['|', ('a', '=', Literal(1)), ('b', '=', Literal(2))])
+        parsed = self.p.parse(['|', ('a', '=', 1), ('b', '=', 2)])
         op = And((Or([Equal(self.t.a, 1), Equal(self.t.b, 2)]),))
         expect(parsed).to(equal(op))
 
     with it('must support mixing and and or operators'):
         parsed = self.p.parse([
-            ('x', '=', Literal(2)),
-            '|', ('a', '=', Literal(1)), ('b', '=', Literal(2))])
+            ('x', '=', 2),
+            '|', ('a', '=', 1), ('b', '=', 2)])
         op = And((
             Equal(self.t.x, 2),
              Or((Equal(self.t.a, 1), Equal(self.t.b, 2)))
@@ -46,9 +46,9 @@ with description('A parser'):
     with it('must support to multiple operators'):
         parsed = self.p.parse([
             '|',
-            ('x', '=', Literal(2)),
+            ('x', '=', 2),
             '|',
-            ('a', '=', Literal(1)), ('b', '=', Literal(2))
+            ('a', '=', 1), ('b', '=', 2)
         ])
         op = And((Or((
             Equal(self.t.x, 2), Or((Equal(self.t.a, 1), Equal(self.t.b, 2)))
@@ -59,7 +59,7 @@ with description('A parser'):
         with it('must raise an exception'):
             def callback():
                 p = Parser(Table('table'))
-                p.parse([('a', '=', Literal('b')), ('c')])
+                p.parse([('a', '=', 'b'), ('c')])
 
             expect(callback).to(raise_error(InvalidExpressionException))
 
@@ -80,7 +80,7 @@ with description('A parser'):
 
             t = Table('table')
             p = Parser(t, dummy_fk)
-            x = p.parse([('table_2.code', '=', Literal('XXX'))])
+            x = p.parse([('table_2.code', '=', 'XXX')])
             expect(p.joins).to(have_len(1))
             expect(p.joins_map).to(have_len(1))
 
@@ -126,9 +126,9 @@ with description('A parser'):
             t = Table('table')
             p = Parser(t, dummy_fk)
             p.parse([
-                ('table_4_id.failed', '=', Literal(True)),
-                ('table_2_id.table_3_id.code', '=', Literal('XXX')),
-                ('table_2_id.state', '=', Literal('open')),
+                ('table_4_id.failed', '=', True),
+                ('table_2_id.table_3_id.code', '=', 'XXX'),
+                ('table_2_id.state', '=', 'open'),
             ])
             t = Table('table')
             t2 = Table('table2')
@@ -183,7 +183,7 @@ with description('A parser'):
             expect(p.joins).to(have_len(0))
             expect(p.joins_map).to(have_len(1))
 
-            x = p.parse([('table_2.code', '=', Literal('XXX'))])
+            x = p.parse([('table_2.code', '=', 'XXX')])
 
             expect(p.joins).to(have_len(1))
             expect(p.joins_map).to(have_len(2))
@@ -223,7 +223,7 @@ with description('A parser'):
             p.joins_map['table_3'] = custom_join
 
             x = p.parse(
-                [('table_2.code', '=', Literal('XXX')), ('table_3.code', '=', Literal('YYY'))]
+                [('table_2.code', '=', 'XXX'), ('table_3.code', '=', 'YYY')]
             )
 
             expect(p.joins).to(have_len(2))
