@@ -1,8 +1,9 @@
 # coding=utf-8
 from ooquery import OOQuery
-from sql import Table
+from sql import Table, Literal
 from sql.operators import *
 from sql.aggregate import *
+from sql.conditionals import *
 
 from expects import *
 
@@ -267,6 +268,30 @@ with description('The OOQuery object'):
                 Max(q.table.field1).as_('max_field1'),
                 group_by=[q.table.field2]
             )
+            expect(str(sel._select)).to(equal(str(sel2)))
+
+        with it('must support concat'):
+            q = OOQuery('table')
+            sel = q.select([Concat('field1', Literal(' 01:00'))])
+            sel2 = q.table.select(Concat(q.table.field1, ' 01:00'))
+            expect(str(sel._select)).to(equal(str(sel2)))
+
+        with it('must support coalesce'):
+            q = OOQuery('table')
+            sel = q.select([Coalesce('field1', Literal(3))])
+            sel2 = q.table.select(Coalesce(q.table.field1, 3))
+            expect(str(sel._select)).to(equal(str(sel2)))
+
+        with it('must support greatest'):
+            q = OOQuery('table')
+            sel = q.select([Greatest('field1', 'field2')])
+            sel2 = q.table.select(Greatest(q.table.field1, q.table.field2))
+            expect(str(sel._select)).to(equal(str(sel2)))
+
+        with it('must support least'):
+            q = OOQuery('table')
+            sel = q.select([Least('field1', 'field2')])
+            sel2 = q.table.select(Least(q.table.field1, q.table.field2))
             expect(str(sel._select)).to(equal(str(sel2)))
 
         with it('must support group by in joined queries'):
