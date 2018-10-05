@@ -1,7 +1,7 @@
 # coding=utf-8
 from ooquery import OOQuery
 from ooquery.expression import Field
-from sql import Table, Literal
+from sql import Table, Literal, NullsFirst, NullsLast
 from sql.operators import *
 from sql.aggregate import *
 from sql.conditionals import *
@@ -211,6 +211,14 @@ with description('The OOQuery object'):
 
             t = Table('table')
             sel = t.select(t.a.as_('a'), t.b.as_('b'), order_by=(t.a.asc, t.b.desc))
+            expect(tuple(sql)).to(equal(tuple(sel)))
+
+        with it('must support nulls first/nulls last options'):
+            q = OOQuery('table', None)
+            sql = q.select(['a', 'b'], order_by=('a.asc.nulls_first', 'b.desc.nulls_last')).where([])
+
+            t = Table('table')
+            sel = t.select(t.a.as_('a'), t.b.as_('b'), order_by=(NullsFirst(t.a.asc), NullsLast(t.b.desc)))
             expect(tuple(sql)).to(equal(tuple(sel)))
 
         with it('must support alias'):
