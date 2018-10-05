@@ -72,11 +72,11 @@ class Parser(object):
 
                 table = join.right
 
-    def create_expressions(self, expression, column_left, column_righ=None):
+    def create_expressions(self, expression, column_left, column_right=None):
         expression = Expression(expression)
         expression.left = column_left
-        if column_righ:
-            expression.rigth = column_righ
+        if column_right:
+            expression.right = column_right
 
         return [expression.expression]
 
