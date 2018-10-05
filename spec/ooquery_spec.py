@@ -213,7 +213,7 @@ with description('The OOQuery object'):
 
         with it('must support nulls first/nulls last options'):
             q = OOQuery('table', None)
-            sql = q.select(['a', 'b'], order_by=('a.asc.nulls_first', 'b.desc.nulls_last')).where([])
+            sql = q.select(['a', 'b'], order_by=(NullsFirst('a.asc'), NullsLast('b.desc'))).where([])
 
             t = Table('table')
             sel = t.select(t.a.as_('a'), t.b.as_('b'), order_by=(NullsFirst(t.a.asc), NullsLast(t.b.desc)))
