@@ -1,5 +1,6 @@
 # coding=utf-8
 from ooquery import OOQuery
+from ooquery.expression import Field
 from sql import Table, Literal, NullsFirst, NullsLast
 from sql.operators import *
 from sql.aggregate import *
@@ -25,6 +26,40 @@ with description('The OOQuery object'):
             sel = t.select(t.field1.as_('field1'), t.field2.as_('field2'))
             sel.where = And((t.field3 == 4,))
             expect(tuple(sql)).to(equal(tuple(sel)))
+
+        with it('should have where mehtod and compare two fields of the table'):
+            q = OOQuery('table')
+            sql = q.select(['field1', 'field2']).where([('field3', '>', Field('field4'))])
+            t = Table('table')
+            sel = t.select(t.field1.as_('field1'), t.field2.as_('field2'))
+            sel.where = And((t.field3 > t.field4,))
+            expect(tuple(sql)).to(equal(tuple(sel)))
+
+        with it('should have where and compare two fields of joined tables'):
+            def dummy_fk(table, field):
+                fks = {
+                    'table_2': {
+                        'constraint_name': 'fk_contraint_name',
+                        'table_name': 'table',
+                        'column_name': 'table_2',
+                        'foreign_table_name': 'table2',
+                        'foreign_column_name': 'id'
+                    }
+                }
+                return fks[field]
+
+            q = OOQuery('table', dummy_fk)
+            sql = q.select(['field1', 'field2', 'table_2.name']).where([
+                ('field1', '=', Field('table_2.name'))
+            ])
+            t = Table('table')
+            t2 = Table('table2')
+            join = t.join(t2)
+            join.condition = join.left.table_2 == join.right.id
+            sel = join.select(t.field1.as_('field1'), t.field2.as_('field2'), t2.name.as_('table_2.name'))
+            sel.where = And((join.left.field1 == join.right.name,))
+            expect(tuple(sql)).to(equal(tuple(sel)))
+
 
         with it('must support joins'):
             def dummy_fk(table, field):

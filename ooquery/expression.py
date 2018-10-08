@@ -23,7 +23,7 @@ class Expression(object):
     def __init__(self, expression):
         if not self.is_expression(expression):
             raise InvalidExpressionException
-        self.left, self.operator, self.rigth = expression
+        self.left, self.operator, self.right = expression
         try:
             self.operator = OPERATORS[self.operator]
         except KeyError:
@@ -33,7 +33,7 @@ class Expression(object):
 
     @property
     def expression(self):
-        return self.operator(self.left, self.rigth)
+        return self.operator(self.left, self.right)
 
     @staticmethod
     def is_expression(expression):
@@ -44,3 +44,13 @@ class Expression(object):
 
 class InvalidExpressionException(Exception):
     pass
+
+
+class Field(object):
+    __slots__ = ('_name', )
+    def __init__(self, name):
+        self._name = name
+
+    @property
+    def name(self):
+        return self._name
