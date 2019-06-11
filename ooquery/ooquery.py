@@ -39,7 +39,7 @@ class OOQuery(object):
                 table_field = self.parser.get_table_field(self.table, field)
                 table_field = aggr(table_field)
                 field = '{}_{}'.format(aggr._sql, field).lower()
-                fields.append(table_field.as_(field))
+                fields.append(table_field.as_(self.as_.get(field, field)))
             elif isinstance(field, Conditional):
                 cond = field.__class__
                 params = []
