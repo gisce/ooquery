@@ -12,6 +12,7 @@ OPERATORS = {
     '=like': Like,
     'like': Like,
     'not like': NotLike,
+    '=ilike': ILike,
     'ilike': ILike,
     'not ilike': NotILike,
     'in': In,
