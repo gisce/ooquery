@@ -2,7 +2,7 @@
 from __future__ import absolute_import
 from collections import OrderedDict
 
-from sql import Table, Join, Literal
+from sql import Table, Join
 from sql.operators import Equal
 
 from ooquery.operators import *

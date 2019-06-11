@@ -49,6 +49,7 @@ class InvalidExpressionException(Exception):
 
 class Field(object):
     __slots__ = ('_name', )
+
     def __init__(self, name):
         self._name = name
 
