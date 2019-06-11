@@ -2,11 +2,12 @@
 from ooquery import OOQuery
 from ooquery.expression import Field
 from sql import Table, Literal, NullsFirst, NullsLast
-from sql.operators import *
-from sql.aggregate import *
-from sql.conditionals import *
+from sql.operators import And, Concat
+from sql.aggregate import Max
+from sql.conditionals import Coalesce, Greatest, Least
 
 from expects import *
+from mamba import *
 
 
 with description('The OOQuery object'):
