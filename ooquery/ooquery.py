@@ -83,7 +83,7 @@ class OOQuery(object):
         if group_by:
             kwargs['group_by'] = []
             for item in group_by:
-                table_field = table_field = self.parser.get_table_field(
+                table_field = self.parser.get_table_field(
                     self.table, item
                 )
                 kwargs['group_by'].append(
