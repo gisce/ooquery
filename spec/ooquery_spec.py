@@ -307,13 +307,17 @@ with description('The OOQuery object'):
 
         with it('must support as'):
             q = OOQuery('table')
-            sql = q.select(
-                ['a', 'b'], as_={'a': 'first column', 'b': 'second column'}
-            ).where([])
+            sel = q.select(
+                ['field1', 'field2'],
+                as_={'field1': 'first column', 'field2': 'second column'}
+            )
 
-            t = Table('table')
-            sel = t.select(t.a.as_('first column'), t.b.as_('second column'))
-            expect(tuple(sql)).to(equal(tuple(sel)))
+            table = q.table
+            sel2 = table.select(
+                table.field1.as_('first column'),
+                table.field2.as_('second column')
+            )
+            expect(str(sel._select)).to(equal(str(sel2)))
 
         with it('must support group by in joined queries'):
             def dummy_fk(table, field):
