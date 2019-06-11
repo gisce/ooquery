@@ -304,6 +304,16 @@ with description('The OOQuery object'):
             sel2 = q.table.select(Least(q.table.field1, q.table.field2))
             expect(str(sel._select)).to(equal(str(sel2)))
 
+        with it('must support as'):
+            q = OOQuery('table')
+            sql = q.select(
+                ['a', 'b'], as_={'a': 'first column', 'b': 'second column'}
+            ).where([])
+
+            t = Table('table')
+            sel = t.select(t.a.as_('first column'), t.b.as_('second column'))
+            expect(tuple(sql)).to(equal(tuple(sel)))
+
         with it('must support group by in joined queries'):
             def dummy_fk(table, field):
                 if table == 'table':
