@@ -319,6 +319,15 @@ with description('The OOQuery object'):
             )
             expect(str(sel._select)).to(equal(str(sel2)))
 
+        with it('must support as with Aggregate fields'):
+            q = OOQuery('table')
+            sel = q.select(
+                [Max('field1')],
+                as_={'max_field1': 'max first column'}
+            )
+            sel2 = q.table.select(Max(q.table.field1).as_('max first column'))
+            expect(str(sel._select)).to(equal(str(sel2)))
+
         with it('must support group by in joined queries'):
             def dummy_fk(table, field):
                 if table == 'table':
