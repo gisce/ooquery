@@ -8,8 +8,22 @@ from sql.operators import Equal
 from ooquery.operators import *
 from ooquery.expression import Expression, InvalidExpressionException, Field
 
+import re
+
 
 class Parser(object):
+
+    JOINS_MAP = {
+        'I': 'INNER',
+        'L': 'LEFT',
+        'LO': 'LEFT OUTER',
+        'R': 'RIGHT',
+        'RO': 'RIGHT OUTER',
+        'F': 'FULL',
+        'FO': 'FULL OUTER',
+        'C': 'CROSS',
+    }
+
     def __init__(self, table, foreign_key=None):
         self.operators = OPERATORS_MAP
         self.table = table
@@ -48,13 +62,29 @@ class Parser(object):
             return self.get_field_from_table(table, field)
 
     def parse_join(self, fields_join):
+        def convert_join_type(join_type):
+            assert join_type.find('(') == 0
+            closing_pos = join_type.find(')')
+            assert closing_pos != -1
+
+            keyword = join_type[1:closing_pos]
+            return self.JOINS_MAP[keyword]
+
         table = self.table
         self.join_path = []
-        for field_join in fields_join:
+        for i, field_join in enumerate(fields_join):
+            join_type = re.findall('\(.*\)', field_join)
+            if join_type:
+                join_type = join_type[0]
+                field_join = field_join.replace(join_type, '')
+                fields_join[i] = field_join
+            else:
+                join_type = '(I)'
+            join_type = convert_join_type(join_type)
             self.join_path.append(field_join)
             fk = self.foreign_key(table._name, field_join)
             table_join = Table(fk['foreign_table_name'])
-            join = Join(self.join_on, table_join)
+            join = Join(self.join_on, table_join, type_=join_type)
             column = getattr(table, fk['column_name'])
             fk_col = getattr(join.right, fk['foreign_column_name'])
             join.condition = Equal(column, fk_col)
