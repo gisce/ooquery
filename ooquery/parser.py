@@ -63,6 +63,10 @@ class Parser(object):
 
     def parse_join(self, fields_join):
         def convert_join_type(join_type):
+            """
+            :param join_type: '(Type)' where Type is mapped at JOINS_MAP
+            :return: returns its correspondence inside the JOINS_MAP
+            """
             assert join_type.find('(') == 0
             closing_pos = join_type.find(')')
             assert closing_pos != -1
@@ -73,10 +77,13 @@ class Parser(object):
         table = self.table
         self.join_path = []
         for i, field_join in enumerate(fields_join):
+            # We search any '(TYPE)' of join inside field
             join_type = re.findall('\(.*\)', field_join)
             if join_type:
                 join_type = join_type[0]
+                # We erase the parenthesis inside the field name
                 field_join = field_join.replace(join_type, '')
+                # And we overwrite the field inside the fields_join list
                 fields_join[i] = field_join
             else:
                 join_type = '(I)'
