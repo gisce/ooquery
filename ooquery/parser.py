@@ -14,6 +14,9 @@ import re
 class Parser(object):
 
     JOIN_TYPES_MAP = {
+        # Join types supported by the Join class of sql package.
+        # See the acceptable values inside the _type_ attribute setter of that
+        # class.
         'I': 'INNER',
         'L': 'LEFT',
         'LO': 'LEFT OUTER',
