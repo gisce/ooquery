@@ -28,7 +28,7 @@ with description('The OOQuery object'):
             sel.where = And((t.field3 == 4,))
             expect(tuple(sql)).to(equal(tuple(sel)))
 
-        with it('should have where mehtod and compare two fields of the table'):
+        with it('should have where method and compare two fields of the table'):
             q = OOQuery('table')
             sql = q.select(['field1', 'field2']).where([('field3', '>', Field('field4'))])
             t = Table('table')
