@@ -61,7 +61,6 @@ with description('The OOQuery object'):
             sel.where = And((join.left.field1 == join.right.name,))
             expect(tuple(sql)).to(equal(tuple(sel)))
 
-
         with it('must support joins'):
             def dummy_fk(table, field):
                 fks = {
@@ -427,10 +426,17 @@ with description('The OOQuery object'):
             def dummy_fk(table, field):
                 fks = {
                     'table_2': {
-                        'constraint_name': 'fk_contraint_name',
+                        'constraint_name': 'fk_contraint_name_3',
                         'table_name': 'table',
                         'column_name': 'table_2',
                         'foreign_table_name': 'table2',
+                        'foreign_column_name': 'id'
+                    },
+                    'table_3': {
+                        'constraint_name': 'fk_contraint_name_3',
+                        'table_name': 'table',
+                        'column_name': 'table_3',
+                        'foreign_table_name': 'table3',
                         'foreign_column_name': 'id'
                     }
                 }
@@ -441,23 +447,19 @@ with description('The OOQuery object'):
             sql = q.select(
                 ['field1', 'field2', '(L)table_2.name'],
                 as_={'(L)table_2.name': 'table_2.name'}).where([
-                    ('(L)table_2.code', '=', 'XXX')
+                    ('(LO)table_3.code', '=', 'XXX')
                 ]
             )
             t = Table('table')
             t2 = Table('table2')
+            t3 = Table('table3')
+
             join = t.join(t2, type_='LEFT')
             join.condition = join.left.table_2 == join.right.id
-            sel = join.select(t.field1.as_('field1'), t.field2.as_('field2'), t2.name.as_('table_2.name'))
-            sel.where = And((join.right.code == 'XXX',))
-            expect(tuple(sql)).to(equal(tuple(sel)))
 
-            # If no keyword is indicated, the default join type should be INNER
-            q = OOQuery('table', dummy_fk)
-            sql = q.select(['field1', 'field2', 'table_2.name']).where([])
-            t = Table('table')
-            t2 = Table('table2')
-            join = t.join(t2, type_='INNER')
-            join.condition = join.left.table_2 == join.right.id
-            sel = join.select(t.field1.as_('field1'), t.field2.as_('field2'), t2.name.as_('table_2.name'))
+            join2 = join.join(t3, type_='LEFT OUTER')
+            join2.condition = join.left.table_3 == join2.right.id
+
+            sel = join2.select(t.field1.as_('field1'), t.field2.as_('field2'), t2.name.as_('table_2.name'))
+            sel.where = And((join2.right.code == 'XXX',))
             expect(tuple(sql)).to(equal(tuple(sel)))
