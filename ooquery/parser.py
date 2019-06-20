@@ -13,7 +13,7 @@ import re
 
 class Parser(object):
 
-    JOINS_MAP = {
+    JOIN_TYPES_MAP = {
         'I': 'INNER',
         'L': 'LEFT',
         'LO': 'LEFT OUTER',
@@ -61,33 +61,39 @@ class Parser(object):
         else:
             return self.get_field_from_table(table, field)
 
+    def parse_join_type(self, field):
+        """
+        Parse the join type inside a field and returns it, alongside a copy of
+        the field with the join type removed.
+        :param field: field by which the join will be made.
+        :return: a 2-tuple where:
+                 - The first value is the join type, included inside the
+                 values of the JOINS_MAP.
+                 - The second value is a **copy** of the field with the join
+                 type extracted.
+        """
+        field_copy = field
+        join_type = re.findall('\(.*\)', field)
+        if join_type:
+            join_type = join_type[0]
+
+            # We erase the parenthesis inside the field name
+            field_copy = field.replace(join_type, '')
+            keyword = join_type.replace('(', '').replace(')', '')
+
+            join_type = self.JOIN_TYPES_MAP.get(keyword, 'INNER')
+        else:
+            join_type = 'INNER'
+        return join_type, field_copy
+
     def parse_join(self, fields_join):
-        def convert_join_type(join_type):
-            """
-            :param join_type: '(Type)' where Type is mapped at JOINS_MAP
-            :return: returns its correspondence inside the JOINS_MAP
-            """
-            assert join_type.find('(') == 0
-            closing_pos = join_type.find(')')
-            assert closing_pos != -1
-
-            keyword = join_type[1:closing_pos]
-            return self.JOINS_MAP[keyword]
-
         table = self.table
         self.join_path = []
         for i, field_join in enumerate(fields_join):
-            # We search any '(TYPE)' of join inside field
-            join_type = re.findall('\(.*\)', field_join)
-            if join_type:
-                join_type = join_type[0]
-                # We erase the parenthesis inside the field name
-                field_join = field_join.replace(join_type, '')
-                # And we overwrite the field inside the fields_join list
-                fields_join[i] = field_join
-            else:
-                join_type = '(I)'
-            join_type = convert_join_type(join_type)
+            join_type, field_join = self.parse_join_type(field_join)
+            # We overwrite the field inside list to remove the join type
+            fields_join[i] = field_join
+
             self.join_path.append(field_join)
             fk = self.foreign_key(table._name, field_join)
             table_join = Table(fk['foreign_table_name'])
@@ -98,7 +104,7 @@ class Parser(object):
             dotted_path = '.'.join(self.join_path)
             join = self.get_join(dotted_path)
             if not join:
-                join = self.join_on.join(table_join)
+                join = self.join_on.join(table_join, type_=join_type)
                 join.condition = Equal(column, fk_col)
                 self.joins_map[dotted_path] = join
                 self.joins.append(join)
@@ -129,7 +135,12 @@ class Parser(object):
                 fields_join = field.split('.')[:-1]
                 field_join = field.split('.')[-1]
                 self.parse_join(fields_join)
-                join = self.joins_map['.'.join(field.split('.')[:-1])]
+                # We get the field without the join type
+                fields_without_join_type = map(
+                    lambda field_join: self.parse_join_type(field_join)[1],
+                    field.split('.')[:-1]
+                )
+                join = self.joins_map['.'.join(fields_without_join_type)]
                 columns[idx] = self.get_table_field(join.right, field_join)
 
         return self.create_expressions(expression, *columns)
