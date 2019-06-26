@@ -2,11 +2,12 @@
 from ooquery import OOQuery
 from ooquery.expression import Field
 from sql import Table, Literal, NullsFirst, NullsLast
-from sql.operators import *
-from sql.aggregate import *
-from sql.conditionals import *
+from sql.operators import And, Concat
+from sql.aggregate import Max
+from sql.conditionals import Coalesce, Greatest, Least
 
 from expects import *
+from mamba import *
 
 
 with description('The OOQuery object'):
@@ -302,6 +303,29 @@ with description('The OOQuery object'):
             q = OOQuery('table')
             sel = q.select([Least('field1', 'field2')])
             sel2 = q.table.select(Least(q.table.field1, q.table.field2))
+            expect(str(sel._select)).to(equal(str(sel2)))
+
+        with it('must support as'):
+            q = OOQuery('table')
+            sel = q.select(
+                ['field1', 'field2'],
+                as_={'field1': 'first column', 'field2': 'second column'}
+            )
+
+            table = q.table
+            sel2 = table.select(
+                table.field1.as_('first column'),
+                table.field2.as_('second column')
+            )
+            expect(str(sel._select)).to(equal(str(sel2)))
+
+        with it('must support as with Aggregate fields'):
+            q = OOQuery('table')
+            sel = q.select(
+                [Max('field1')],
+                as_={'max_field1': 'max first column'}
+            )
+            sel2 = q.table.select(Max(q.table.field1).as_('max first column'))
             expect(str(sel._select)).to(equal(str(sel2)))
 
         with it('must support group by in joined queries'):

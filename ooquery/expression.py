@@ -12,6 +12,7 @@ OPERATORS = {
     '=like': Like,
     'like': Like,
     'not like': NotLike,
+    '=ilike': ILike,
     'ilike': ILike,
     'not ilike': NotILike,
     'in': In,
@@ -48,6 +49,7 @@ class InvalidExpressionException(Exception):
 
 class Field(object):
     __slots__ = ('_name', )
+
     def __init__(self, name):
         self._name = name
 
