@@ -17,6 +17,7 @@ class OOQuery(object):
         self._select = self.table.select()
         self.parser = self.create_parser()
         self.select_opts = {}
+        self.as_ = {}
 
     def create_parser(self):
         return Parser(self.table, self.foreign_key)
@@ -38,7 +39,7 @@ class OOQuery(object):
                 table_field = self.parser.get_table_field(self.table, field)
                 table_field = aggr(table_field)
                 field = '{}_{}'.format(aggr._sql, field).lower()
-                fields.append(table_field.as_(field))
+                fields.append(table_field.as_(self.as_.get(field, field)))
             elif isinstance(field, Conditional):
                 cond = field.__class__
                 params = []
@@ -63,13 +64,14 @@ class OOQuery(object):
                 fields.append(table_field)
             else:
                 table_field = self.parser.get_table_field(self.table, field)
-                fields.append(table_field.as_(field))
+                fields.append(table_field.as_(self.as_.get(field, field)))
         return fields
 
     def select(self, fields=None, **kwargs):
         self.parser = self.create_parser()
         self._fields = fields
         self.select_opts = kwargs
+        self.as_ = kwargs.pop('as_', self.as_)
         order_by = kwargs.pop('order_by', None)
         group_by = kwargs.pop('group_by', None)
         if order_by:
@@ -88,7 +90,7 @@ class OOQuery(object):
         if group_by:
             kwargs['group_by'] = []
             for item in group_by:
-                table_field = table_field = self.parser.get_table_field(
+                table_field = self.parser.get_table_field(
                     self.table, item
                 )
                 kwargs['group_by'].append(
