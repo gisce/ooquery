@@ -64,6 +64,13 @@ class OOQuery(object):
                 fields.append(table_field)
             else:
                 table_field = self.parser.get_table_field(self.table, field)
+                if table_field is None:
+                    raise AttributeError(
+                        u"Field '{field}' does not exist on table: "
+                        u"'{table}'".format(
+                            field=field, table=self.table._name
+                        )
+                    )
                 fields.append(table_field.as_(self.as_.get(field, field)))
         return fields
 
