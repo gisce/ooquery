@@ -2,7 +2,7 @@
 from __future__ import absolute_import
 from functools import reduce
 
-from sql import Table, Literal
+from sql import Table, Literal, NullOrder
 from sql.aggregate import Aggregate
 from sql.conditionals import Conditional
 from sql.operators import Operator
@@ -77,9 +77,17 @@ class OOQuery(object):
         if order_by:
             kwargs['order_by'] = []
             for item in order_by:
-                kwargs['order_by'].append(
-                    reduce(getattr, item.split('.'), self.select_on)
-                )
+                null_order = None
+                if isinstance(item, NullOrder):
+                    null_order = item.__class__
+                    item = item.expression
+                order_values = item.rsplit('.', 1)
+                order = self.parser.get_table_field(self.table, order_values[0])
+                if len(order_values) > 1:
+                    order = getattr(order, order_values[1])
+                if null_order:
+                    order = null_order(order)
+                kwargs['order_by'].append(order)
         if group_by:
             kwargs['group_by'] = []
             for item in group_by:

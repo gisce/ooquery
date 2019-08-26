@@ -206,17 +206,58 @@ with description('The OOQuery object'):
             sel = t.select(t.a.as_('a'), t.b.as_('b'), limit=10)
             expect(tuple(sql)).to(equal(tuple(sel)))
 
-        with it('must support order'):
-            q = OOQuery('table', None)
-            sql = q.select(['a', 'b'], order_by=('a.asc', 'b.desc')).where([])
+        with context('when ordening'):
+            with it('must support order'):
+                q = OOQuery('table', None)
+                sql = q.select(['a', 'b'], order_by=('a.asc', 'b.desc')).where([])
 
-            t = Table('table')
-            sel = t.select(t.a.as_('a'), t.b.as_('b'), order_by=(t.a.asc, t.b.desc))
-            expect(tuple(sql)).to(equal(tuple(sel)))
+                t = Table('table')
+                sel = t.select(t.a.as_('a'), t.b.as_('b'), order_by=(t.a.asc, t.b.desc))
+                expect(tuple(sql)).to(equal(tuple(sel)))
+
+            with it('must support order by field'):
+                q = OOQuery('table', None)
+                sql = q.select(['a', 'b'], order_by=('a', )).where([])
+
+                t = Table('table')
+                sel = t.select(t.a.as_('a'), t.b.as_('b'), order_by=(t.a, ))
+                expect(tuple(sql)).to(equal(tuple(sel)))
+
+            with it('must support order in joins'):
+
+                def dummy_fk(table, field):
+                    fks = {
+                        'table_2': {
+                            'constraint_name': 'fk_contraint_name',
+                            'table_name': 'table',
+                            'column_name': 'table_2',
+                            'foreign_table_name': 'table2',
+                            'foreign_column_name': 'id'
+                        }
+                    }
+                    return fks[field]
+
+                q = OOQuery('table', dummy_fk)
+                sql = q.select(
+                    ['field1', 'field2', 'table_2.name'],
+                    order_by=('table_2.sequence.desc', )
+                ).where([])
+                t = Table('table')
+                t2 = Table('table2')
+                join = t.join(t2)
+                join.condition = join.left.table_2 == join.right.id
+                sel = join.select(
+                    t.field1.as_('field1'),
+                    t.field2.as_('field2'),
+                    t2.name.as_('table_2.name'),
+                    order_by=(t2.sequence.desc, )
+                )
+                expect(tuple(sql)).to(equal(tuple(sel)))
+
 
         with it('must support nulls first/nulls last options'):
             q = OOQuery('table', None)
-            sql = q.select(['a', 'b'], order_by=('a.asc.nulls_first', 'b.desc.nulls_last')).where([])
+            sql = q.select(['a', 'b'], order_by=(NullsFirst('a.asc'), NullsLast('b.desc'))).where([])
 
             t = Table('table')
             sel = t.select(t.a.as_('a'), t.b.as_('b'), order_by=(NullsFirst(t.a.asc), NullsLast(t.b.desc)))
