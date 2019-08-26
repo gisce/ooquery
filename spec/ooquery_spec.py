@@ -215,6 +215,14 @@ with description('The OOQuery object'):
                 sel = t.select(t.a.as_('a'), t.b.as_('b'), order_by=(t.a.asc, t.b.desc))
                 expect(tuple(sql)).to(equal(tuple(sel)))
 
+            with it('must support order by field'):
+                q = OOQuery('table', None)
+                sql = q.select(['a', 'b'], order_by=('a', )).where([])
+
+                t = Table('table')
+                sel = t.select(t.a.as_('a'), t.b.as_('b'), order_by=(t.a, ))
+                expect(tuple(sql)).to(equal(tuple(sel)))
+
             with it('must support order in joins'):
 
                 def dummy_fk(table, field):

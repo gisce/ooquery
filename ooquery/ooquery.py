@@ -81,9 +81,10 @@ class OOQuery(object):
                 if isinstance(item, NullOrder):
                     null_order = item.__class__
                     item = item.expression
-                field, order = item.rsplit('.', 1)
-                field = self.parser.get_table_field(self.table, field)
-                order = getattr(field, order)
+                order_values = item.rsplit('.', 1)
+                order = self.parser.get_table_field(self.table, order_values[0])
+                if len(order_values) > 1:
+                    order = getattr(order, order_values[1])
                 if null_order:
                     order = null_order(order)
                 kwargs['order_by'].append(order)
