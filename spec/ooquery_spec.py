@@ -1,6 +1,7 @@
 # coding=utf-8
 from ooquery import OOQuery
 from ooquery.expression import Field
+from ooquery.operators import *
 from sql import Table, Literal, NullsFirst, NullsLast
 from sql.operators import And, Concat
 from sql.aggregate import Max
@@ -415,13 +416,7 @@ with description('The OOQuery object'):
                 ])
                 expect(q.parser).to(not_(equal(parser)))
 
-        with it('must construct joins according to keywords given in select'):
-            """
-            We test the custom join functionality, putting a keyword inside 
-            parenthesis before the join dot in select/where clause.
-            The keywords are the initials of the join types: (L)eft, (R)ight, 
-            (RO)outer, ...
-            """
+        with it('must support differnt joins'):
 
             def dummy_fk(table, field):
                 fks = {
@@ -445,11 +440,10 @@ with description('The OOQuery object'):
             # We test if the keyword (L) builds a LEFT join
             q = OOQuery('table', dummy_fk)
             sql = q.select(
-                ['field1', 'field2', '(L)table_2.name'],
-                as_={'(L)table_2.name': 'table_2.name'}).where([
-                    ('(LO)table_3.code', '=', 'XXX')
-                ]
-            )
+                ['field1', 'field2', LeftJoin('table_2.name')],
+            ).where([
+                (LeftOuterJoin('table_3.code'), '=', 'XXX')
+            ])
             t = Table('table')
             t2 = Table('table2')
             t3 = Table('table3')

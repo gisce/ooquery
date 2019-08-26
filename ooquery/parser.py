@@ -8,24 +8,8 @@ from sql.operators import Equal
 from ooquery.operators import *
 from ooquery.expression import Expression, InvalidExpressionException, Field
 
-import re
-
 
 class Parser(object):
-
-    JOIN_TYPES_MAP = {
-        # Join types supported by the Join class of sql package.
-        # See the acceptable values inside the _type_ attribute setter of that
-        # class.
-        'I': 'INNER',
-        'L': 'LEFT',
-        'LO': 'LEFT OUTER',
-        'R': 'RIGHT',
-        'RO': 'RIGHT OUTER',
-        'F': 'FULL',
-        'FO': 'FULL OUTER',
-        'C': 'CROSS',
-    }
 
     def __init__(self, table, foreign_key=None):
         self.operators = OPERATORS_MAP
@@ -48,8 +32,8 @@ class Parser(object):
     def get_field_from_table(self, table, field):
         return getattr(table, field)
 
-    def get_field_from_related_table(self, join_path_list, field_name):
-        self.parse_join(join_path_list)
+    def get_field_from_related_table(self, join_path_list, field_name, join_type='INNER'):
+        self.parse_join(join_path_list, join_type)
         path = '.'.join(join_path_list)
         join = self.joins_map.get(path)
         if join:
@@ -57,46 +41,23 @@ class Parser(object):
             return self.get_field_from_table(table, field_name)
 
     def get_table_field(self, table, field):
+        if isinstance(field, JoinType):
+            join_type = field.type_
+            field = field.field
+        else:
+            join_type = 'INNER'
         if '.' in field:
             return self.get_field_from_related_table(
-                field.split('.')[:-1], field.split('.')[-1]
+                field.split('.')[:-1], field.split('.')[-1],
+                join_type
             )
         else:
             return self.get_field_from_table(table, field)
 
-    def parse_join_type(self, field):
-        """
-        Parse the join type inside a field and returns it, alongside a copy of
-        the field with the join type removed.
-        :param field: field by which the join will be made.
-        :return: a 2-tuple where:
-                 - The first value is the join type, included inside the
-                 values of the JOINS_MAP.
-                 - The second value is a **copy** of the field with the join
-                 type extracted.
-        """
-        field_copy = field
-        join_type = re.findall('\(.*\)', field)
-        if join_type:
-            join_type = join_type[0]
-
-            # We erase the parenthesis inside the field name
-            field_copy = field.replace(join_type, '')
-            keyword = join_type.replace('(', '').replace(')', '')
-
-            join_type = self.JOIN_TYPES_MAP.get(keyword, 'INNER')
-        else:
-            join_type = 'INNER'
-        return join_type, field_copy
-
-    def parse_join(self, fields_join):
+    def parse_join(self, fields_join, join_type):
         table = self.table
         self.join_path = []
-        for i, field_join in enumerate(fields_join):
-            join_type, field_join = self.parse_join_type(field_join)
-            # We overwrite the field inside list to remove the join type
-            fields_join[i] = field_join
-
+        for field_join in fields_join:
             self.join_path.append(field_join)
             fk = self.foreign_key(table._name, field_join)
             table_join = Table(fk['foreign_table_name'])
@@ -134,16 +95,16 @@ class Parser(object):
 
         for idx, field in enumerate(fields):
             columns.append(self.get_table_field(self.table, field))
+            if isinstance(field, JoinType):
+                join_type = expression[0].type_
+                field = field.field
+            else:
+                join_type = 'INNER'
             if '.' in field:
                 fields_join = field.split('.')[:-1]
                 field_join = field.split('.')[-1]
-                self.parse_join(fields_join)
-                # We get the field without the join type
-                fields_without_join_type = map(
-                    lambda field_join: self.parse_join_type(field_join)[1],
-                    field.split('.')[:-1]
-                )
-                join = self.joins_map['.'.join(fields_without_join_type)]
+                self.parse_join(fields_join, join_type)
+                join = self.joins_map['.'.join(field.split('.')[:-1])]
                 columns[idx] = self.get_table_field(join.right, field_join)
 
         return self.create_expressions(expression, *columns)
