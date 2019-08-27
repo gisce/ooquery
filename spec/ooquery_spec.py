@@ -457,7 +457,7 @@ with description('The OOQuery object'):
                 ])
                 expect(q.parser).to(not_(equal(parser)))
 
-        with it('must support differnt joins'):
+        with it('must support different joins'):
 
             def dummy_fk(table, field):
                 fks = {
@@ -478,7 +478,6 @@ with description('The OOQuery object'):
                 }
                 return fks[field]
 
-            # We test if the keyword (L) builds a LEFT join
             q = OOQuery('table', dummy_fk)
             sql = q.select(
                 ['field1', 'field2', LeftJoin('table_2.name')],
