@@ -27,3 +27,49 @@ OPERATORS_MAP = {
     '&': And,
     '!': Not
 }
+
+
+class JoinType(object):
+    type_ = None
+    __slots__ = ('field', )
+
+    def __init__(self, field):
+        self.field = field
+
+    def __repr__(self):
+        return '{}({})'.format(self.type_, self.field)
+
+    def __str__(self):
+        return self.field
+
+
+class InnerJoin(JoinType):
+    type_ = 'INNER'
+
+
+class LeftJoin(JoinType):
+    type_ = 'LEFT'
+
+
+class LeftOuterJoin(JoinType):
+    type_ = 'LEFT OUTER'
+
+
+class RightJoin(JoinType):
+    type_ = 'RIGHT'
+
+
+class RightOuterJoin(JoinType):
+    type_ = 'RIGHT OUTER'
+
+
+class FullJoin(JoinType):
+    type_ = 'FULL'
+
+
+class FullOuterJoin(JoinType):
+    type_ = 'FULL OUTER'
+
+
+class CrossJoin(JoinType):
+    type_ = 'CROSS'
