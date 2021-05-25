@@ -42,6 +42,9 @@ class JoinType(object):
     def __str__(self):
         return self.field
 
+    def replace(self, *args):
+        return self.field.replace(*args)
+
 
 class InnerJoin(JoinType):
     type_ = 'INNER'
