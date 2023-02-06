@@ -2,7 +2,7 @@
 from __future__ import absolute_import
 from functools import reduce
 
-from sql import Table, Literal, NullOrder
+from sql import Table, Literal, NullOrder, As
 from sql.aggregate import Aggregate
 from sql.conditionals import Conditional
 from sql.operators import Operator
@@ -33,13 +33,20 @@ class OOQuery(object):
     def fields(self):
         fields = []
         for field in self._fields:
+            output_name = None
+            if isinstance(field, As):
+                output_name = field.output_name
+                field = field.expression
             if isinstance(field, Aggregate):
                 aggr = field.__class__
                 field = field.expression
                 table_field = self.parser.get_table_field(self.table, field)
                 table_field = aggr(table_field)
-                field = '{}_{}'.format(aggr._sql, field).lower()
-                fields.append(table_field.as_(self.as_.get(field, field)))
+                if not output_name:
+                    field = '{}_{}'.format(aggr._sql, field).lower()
+                    fields.append(table_field.as_(self.as_.get(field, field)))
+                else:
+                    fields.append(table_field.as_(output_name))
             elif isinstance(field, Conditional):
                 cond = field.__class__
                 params = []

@@ -322,6 +322,15 @@ with description('The OOQuery object'):
             )
             expect(str(sel._select)).to(equal(str(sel2)))
 
+        with it('must respect as from original query'):
+            q = OOQuery('table')
+            sel = q.select([Max('field1').as_('foo')], group_by=['field2'])
+            sel2 = q.table.select(
+                Max(q.table.field1).as_('foo'),
+                group_by=[q.table.field2]
+            )
+            expect(str(sel._select)).to(equal(str(sel2)))
+
         with it('must support concat'):
             q = OOQuery('table')
             sel = q.select([Concat('field1', Literal(' 01:00'))])
