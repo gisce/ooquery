@@ -506,3 +506,43 @@ with description('The OOQuery object'):
             sel = join2.select(t.field1.as_('field1'), t.field2.as_('field2'), t2.name.as_('table_2.name'))
             sel.where = And((join2.right.code == 'XXX',))
             expect(tuple(sql)).to(equal(tuple(sel)))
+        
+        with it('unnacent funciton runs good'):
+
+            from ooquery.functions import Unaccent
+            from sql.functions import Upper
+
+            t = Table('table')
+            unaccent_ = Unaccent(t.c1)
+            expect(str(unaccent_)).to(equal('UNACCENT("c1")'))
+            expect(unaccent_.params).to(equal(()))
+
+        
+        with it('must support unaccent queries'):
+            from ooquery.functions import Unaccent
+            from sql.functions import Upper
+
+            q = OOQuery('table')
+            sql = q.select(['field1', 'field2']).where(
+                [
+                    (Unaccent(Field('field1')), '>', Unaccent(Field('field2')))
+                ]
+            )
+            t = Table('table')
+            sel = t.select(t.field1.as_('field1'), t.field2.as_('field2'))
+            sel.where = And((Unaccent(t.field1) > Unaccent(t.field2),))
+            expect(tuple(sql)).to(equal(tuple(sel)))
+
+        with it('must support Upper queries'):
+            from sql.functions import Upper
+
+            q = OOQuery('table')
+            sql = q.select(['field1', 'field2']).where(
+                [
+                    (Upper('field3'), '>', Upper('field4'))
+                ]
+            )
+            t = Table('table')
+            sel = t.select(t.field1.as_('field1'), t.field2.as_('field2'))
+            sel.where = And((Upper(t.field3) > Upper(t.field4),))
+            expect(tuple(sql)).to(equal(tuple(sel)))
