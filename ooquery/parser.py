@@ -7,8 +7,11 @@ from sql.operators import Equal
 
 from ooquery.operators import *
 from ooquery.expression import Expression, InvalidExpressionException, Field
-
-
+# Py2/3 compat per a tipus de cadena
+try:  # Py2
+    string_types = (basestring,)
+except NameError:  # Py3
+    string_types = (str,)
 class Parser(object):
 
     def __init__(self, table, foreign_key=None):
@@ -30,6 +33,9 @@ class Parser(object):
             return self.table
 
     def get_field_from_table(self, table, field):
+        # Accepta també Field d'ooquery: normalitza a nom
+        if isinstance(field, Field):
+            field = field.name
         return getattr(table, field)
 
     def get_field_from_related_table(self, join_path_list, field_name, join_type='INNER'):
@@ -41,12 +47,15 @@ class Parser(object):
             return self.get_field_from_table(table, field_name)
 
     def get_table_field(self, table, field):
+        # Accepta també Field d'ooquery: normalitza a nom
+        if isinstance(field, Field):
+            field = field.name
         if isinstance(field, JoinType):
             join_type = field.type_
             field = field.field
         else:
             join_type = 'INNER'
-        if '.' in field:
+        if isinstance(field, str) and '.' in field:
             return self.get_field_from_related_table(
                 field.split('.')[:-1], field.split('.')[-1],
                 join_type
@@ -88,26 +97,47 @@ class Parser(object):
         return [expression.expression]
 
     def get_expressions(self, expression):
-        fields = [expression[0]]
-        columns = []
-        if isinstance(expression[2], Field):
-            fields.append(expression[2].name)
+        from sql.functions import Function
 
-        for idx, field in enumerate(fields):
-            columns.append(self.get_table_field(self.table, field))
-            if isinstance(field, JoinType):
-                join_type = expression[0].type_
-                field = field.field
-            else:
-                join_type = 'INNER'
-            if '.' in field:
-                fields_join = field.split('.')[:-1]
-                field_join = field.split('.')[-1]
-                self.parse_join(fields_join, join_type)
-                join = self.joins_map['.'.join(field.split('.')[:-1])]
-                columns[idx] = self.get_table_field(join.right, field_join)
+        def resolve_value(value, side='left', in_function=False):
+            """
+            Rules:
+              - Dins d'una Function: les cadenes són NOMS DE CAMP (possiblement 'a.b.c').
+              - Top-level LEFT: cadenes = NOMS DE CAMP.
+              - Top-level RIGHT: cadenes = LITERALS (parametritzats com %s).
+            """
+            # Funcions: resol paràmetres recursivament i reconstrueix la instància
+            if isinstance(value, Function):
+                new_params = []
+                for p in value.params:
+                    new_params.append(resolve_value(p, side='left', in_function=True))
+                # IMPORTANT: no mutar tuples! Re-creem la funció amb els params resolts
+                return value.__class__(*new_params)
 
-        return self.create_expressions(expression, *columns)
+            # Field d'ooquery → columna
+            if isinstance(value, Field):
+                return self.get_table_field(self.table, value.name)
+
+            # JoinType → camí de camp amb tipus de join
+            if isinstance(value, JoinType):
+                return self.get_table_field(self.table, value)
+
+            # Cadenes: segons context
+            if isinstance(value, string_types):
+                if in_function or side == 'left':
+                    return self.get_table_field(self.table, value)
+                else:
+                    # RHS literal (permet: ('b.code', '=', 'XXX') → %s)
+                    return value
+
+            # Altres literals (números, None, etc.)
+            return value
+
+        left = expression[0]
+        left_resolved = resolve_value(left, side='left')
+        right_resolved = resolve_value(expression[2], side='right')
+
+        return self.create_expressions(expression, left_resolved, right_resolved)
 
     def parse(self, query):
         result = []
