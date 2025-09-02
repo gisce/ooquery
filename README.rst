@@ -42,3 +42,36 @@ Support for reading from joined tables
     sql = q.select(['number', 'partner_id.name', 'partner_id.vat']).where([
         ('state', '=', 'open')
     ])
+
+Domain to JSON Conversion
+=========================
+
+Convert OpenERP/Odoo domains to JSON format:
+
+.. code-block:: python
+
+    from ooquery import convert_from_domain
+    import json
+
+    # Simple domain
+    domain = [('name', '=', 'John'), ('age', '>', 18)]
+    result = convert_from_domain(domain)
+    print(json.dumps(result, indent=2))
+    # {
+    #   "combinator": "and",
+    #   "rules": [
+    #     {"field": "name", "operator": "=", "value": "John"},
+    #     {"field": "age", "operator": ">", "value": 18}
+    #   ]
+    # }
+
+    # OR conditions  
+    domain = ['|', ('state', '=', 'open'), ('state', '=', 'draft')]
+    result = convert_from_domain(domain)
+    # {
+    #   "combinator": "or", 
+    #   "rules": [
+    #     {"field": "state", "operator": "=", "value": "open"},
+    #     {"field": "state", "operator": "=", "value": "draft"}
+    #   ]
+    # }
