@@ -2,6 +2,7 @@
 from ooquery import OOQuery
 from ooquery.expression import Field
 from ooquery.operators import *
+from ooquery.functions import Unaccent
 from sql import Table, Literal, NullsFirst, NullsLast
 from sql.operators import And, Concat
 from sql.aggregate import Max
@@ -506,3 +507,274 @@ with description('The OOQuery object'):
             sel = join2.select(t.field1.as_('field1'), t.field2.as_('field2'), t2.name.as_('table_2.name'))
             sel.where = And((join2.right.code == 'XXX',))
             expect(tuple(sql)).to(equal(tuple(sel)))
+        
+        with it('unnacent funciton runs good'):
+
+            from ooquery.functions import Unaccent
+            from sql.functions import Upper
+
+            t = Table('table')
+            unaccent_ = Unaccent(t.c1)
+            expect(str(unaccent_)).to(equal('UNACCENT("c1")'))
+            expect(unaccent_.params).to(equal(()))
+
+        
+        with it('must support unaccent queries with fields'):
+
+            from sql.functions import Upper
+
+            q = OOQuery('table')
+            sql = q.select(['field1', 'field2']).where(
+                [
+                    (Unaccent(Field('field1')), '>', Unaccent(Field('field2')))
+                ]
+            )
+            t = Table('table')
+            sel = t.select(t.field1.as_('field1'), t.field2.as_('field2'))
+            sel.where = And((Unaccent(t.field1) > Unaccent(t.field2),))
+            expect(tuple(sql)).to(equal(tuple(sel)))
+
+        with it('must support unaccent queries with fields and values'):
+
+            from sql.functions import Upper
+
+            q = OOQuery('table')
+            sql = q.select(['field1', 'field2']).where(
+                [
+                    (Unaccent(Field('field1')), '>', Unaccent('XXXX'))
+                ]
+            )
+            t = Table('table')
+            sel = t.select(t.field1.as_('field1'), t.field2.as_('field2'))
+            sel.where = And((Unaccent(t.field1) > Unaccent('XXXX'),))
+            expect(tuple(sql)).to(equal(tuple(sel)))
+
+        with it('must support Upper queries'):
+            from sql.functions import Upper
+
+            q = OOQuery('table')
+            sql = q.select(['field1', 'field2']).where(
+                [
+                    (Upper(Field('field3')), '>', Upper(Field('field4')))
+                ]
+            )
+            t = Table('table')
+            sel = t.select(t.field1.as_('field1'), t.field2.as_('field2'))
+            sel.where = And((Upper(t.field3) > Upper(t.field4),))
+            expect(tuple(sql)).to(equal(tuple(sel)))
+
+        with it('must support Upper queries with fields and values'):
+            from sql.functions import Upper
+
+            q = OOQuery('table')
+            sql = q.select(['field1', 'field2']).where(
+                [
+                    (Upper(Field('field3')), '>', Upper('XXXX'))
+                ]
+            )
+            t = Table('table')
+            sel = t.select(t.field1.as_('field1'), t.field2.as_('field2'))
+            sel.where = And((Upper(t.field3) > Upper('XXXX'),))
+            expect(tuple(sql)).to(equal(tuple(sel)))
+
+        with it('must support Upper queries with fields without especific and values'):
+            from sql.functions import Upper
+
+            q = OOQuery('table')
+            sql = q.select(['field1', 'field2']).where(
+                [
+                    (Upper('field3'), '>', Upper('XXXX'))
+                ]
+            )
+            t = Table('table')
+            sel = t.select(t.field1.as_('field1'), t.field2.as_('field2'))
+            sel.where = And((Upper(t.field3) > Upper('XXXX'),))
+            expect(tuple(sql)).to(equal(tuple(sel)))
+
+        with it('must support joins with unaccent'):
+            def dummy_fk(table, field):
+                fks = {
+                    'table_2': {
+                        'constraint_name': 'fk_contraint_name',
+                        'table_name': 'table',
+                        'column_name': 'table_2',
+                        'foreign_table_name': 'table2',
+                        'foreign_column_name': 'id'
+                    }
+                }
+                return fks[field]
+
+            q = OOQuery('table', dummy_fk)
+            sql = q.select(['field1', 'field2', 'table_2.name']).where([
+                (Unaccent('table_2.code'), '=', Unaccent('XXX'))
+            ])
+            t = Table('table')
+            t2 = Table('table2')
+            join = t.join(t2)
+            join.condition = join.left.table_2 == join.right.id
+            sel = join.select(t.field1.as_('field1'), t.field2.as_('field2'), t2.name.as_('table_2.name'))
+            sel.where = And((Unaccent(join.right.code) == Unaccent('XXX'),))
+            expect(tuple(sql)).to(equal(tuple(sel)))
+
+            q = OOQuery('table', dummy_fk)
+            sql = q.select(['field1', 'field2', 'table_2.name']).where([])
+            t = Table('table')
+            t2 = Table('table2')
+            join = t.join(t2)
+            join.condition = join.left.table_2 == join.right.id
+            sel = join.select(t.field1.as_('field1'), t.field2.as_('field2'), t2.name.as_('table_2.name'))
+            expect(tuple(sql)).to(equal(tuple(sel)))
+
+        with it('must support joins with unaccent only in left part'):
+            def dummy_fk(table, field):
+                fks = {
+                    'table_2': {
+                        'constraint_name': 'fk_contraint_name',
+                        'table_name': 'table',
+                        'column_name': 'table_2',
+                        'foreign_table_name': 'table2',
+                        'foreign_column_name': 'id'
+                    }
+                }
+                return fks[field]
+
+            q = OOQuery('table', dummy_fk)
+            sql = q.select(['field1', 'field2', 'table_2.name']).where([
+                (Unaccent('table_2.code'), '=', 'XXX')
+            ])
+            t = Table('table')
+            t2 = Table('table2')
+            join = t.join(t2)
+            join.condition = join.left.table_2 == join.right.id
+            sel = join.select(t.field1.as_('field1'), t.field2.as_('field2'), t2.name.as_('table_2.name'))
+            sel.where = And((Unaccent(join.right.code) == 'XXX',))
+            expect(tuple(sql)).to(equal(tuple(sel)))
+
+            q = OOQuery('table', dummy_fk)
+            sql = q.select(['field1', 'field2', 'table_2.name']).where([])
+            t = Table('table')
+            t2 = Table('table2')
+            join = t.join(t2)
+            join.condition = join.left.table_2 == join.right.id
+            sel = join.select(t.field1.as_('field1'), t.field2.as_('field2'), t2.name.as_('table_2.name'))
+            expect(tuple(sql)).to(equal(tuple(sel)))
+
+        with it('must support joins with unaccent only in right part'):
+            def dummy_fk(table, field):
+                fks = {
+                    'table_2': {
+                        'constraint_name': 'fk_contraint_name',
+                        'table_name': 'table',
+                        'column_name': 'table_2',
+                        'foreign_table_name': 'table2',
+                        'foreign_column_name': 'id'
+                    }
+                }
+                return fks[field]
+
+            q = OOQuery('table', dummy_fk)
+            sql = q.select(['field1', 'field2', 'table_2.name']).where([
+                ('table_2.code', '=', Unaccent('XXX'))
+            ])
+            t = Table('table')
+            t2 = Table('table2')
+            join = t.join(t2)
+            join.condition = join.left.table_2 == join.right.id
+            sel = join.select(t.field1.as_('field1'), t.field2.as_('field2'), t2.name.as_('table_2.name'))
+            sel.where = And((join.right.code == Unaccent('XXX'),))
+            expect(tuple(sql)).to(equal(tuple(sel)))
+
+            q = OOQuery('table', dummy_fk)
+            sql = q.select(['field1', 'field2', 'table_2.name']).where([])
+            t = Table('table')
+            t2 = Table('table2')
+            join = t.join(t2)
+            join.condition = join.left.table_2 == join.right.id
+            sel = join.select(t.field1.as_('field1'), t.field2.as_('field2'), t2.name.as_('table_2.name'))
+            expect(tuple(sql)).to(equal(tuple(sel)))
+
+        with it('must support deep joins with unaccent'):
+            def dummy_fk(table, field):
+                if table == 'table':
+                    fks = {
+                        'table_2_id': {
+                            'constraint_name': 'fk_contraint_name',
+                            'table_name': 'table',
+                            'column_name': 'table_2_id',
+                            'foreign_table_name': 'table2',
+                            'foreign_column_name': 'id'
+                        }
+                    }
+                elif table == 'table2':
+                    fks = {
+                    'table_3_id': {
+                        'constraint_name': 'fk_contraint_name',
+                        'table_name': 'table2',
+                        'column_name': 'table_3_id',
+                        'foreign_table_name': 'table3',
+                        'foreign_column_name': 'id'
+                    }
+                }
+                return fks[field]
+
+
+            q = OOQuery('table', dummy_fk)
+            sql = q.select(['field1', 'field2', 'table_2_id.table_3_id.name']).where([
+                (Unaccent('table_2_id.table_3_id.code'), '=', Unaccent('XXX'))
+            ])
+            t = Table('table')
+            t2 = Table('table2')
+            t3 = Table('table3')
+            join = t.join(t2)
+            join.condition = t.table_2_id == join.right.id
+            join2 = join.join(t3)
+            join2.condition = t2.table_3_id == join2.right.id
+            sel = join2.select(t.field1.as_('field1'), t.field2.as_('field2'), t3.name.as_('table_2_id.table_3_id.name'))
+            sel.where = And((Unaccent(join2.right.code) == Unaccent('XXX'),))
+            expect(tuple(sql)).to(equal(tuple(sel)))
+            expect(q.parser.joins_map).to(have_len(2))
+            expect(str(q.parser.joins_map['table_2_id'])).to(equal(str(join)))
+            expect(str(q.parser.joins_map['table_2_id.table_3_id'])).to(equal(str(join2)))
+
+        with it('must support deep joins with unaccent with field'):
+            def dummy_fk(table, field):
+                if table == 'table':
+                    fks = {
+                        'table_2_id': {
+                            'constraint_name': 'fk_contraint_name',
+                            'table_name': 'table',
+                            'column_name': 'table_2_id',
+                            'foreign_table_name': 'table2',
+                            'foreign_column_name': 'id'
+                        }
+                    }
+                elif table == 'table2':
+                    fks = {
+                    'table_3_id': {
+                        'constraint_name': 'fk_contraint_name',
+                        'table_name': 'table2',
+                        'column_name': 'table_3_id',
+                        'foreign_table_name': 'table3',
+                        'foreign_column_name': 'id'
+                    }
+                }
+                return fks[field]
+
+
+            q = OOQuery('table', dummy_fk)
+            sql = q.select(['field1', 'field2', 'table_2_id.table_3_id.name']).where([
+                (Unaccent('table_2_id.table_3_id.code'), '=', Unaccent('field1'))
+            ])
+            t = Table('table')
+            t2 = Table('table2')
+            t3 = Table('table3')
+            join = t.join(t2)
+            join.condition = t.table_2_id == join.right.id
+            join2 = join.join(t3)
+            join2.condition = t2.table_3_id == join2.right.id
+            sel = join2.select(t.field1.as_('field1'), t.field2.as_('field2'), t3.name.as_('table_2_id.table_3_id.name'))
+            sel.where = And((Unaccent(join2.right.code) == Unaccent('field1'),))
+            expect(tuple(sql)).to(equal(tuple(sel)))
+            expect(q.parser.joins_map).to(have_len(2))
+            expect(str(q.parser.joins_map['table_2_id'])).to(equal(str(join)))
+            expect(str(q.parser.joins_map['table_2_id.table_3_id'])).to(equal(str(join2)))
