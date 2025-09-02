@@ -103,7 +103,7 @@ def _process_element(element):
     """Process a single domain element into a rule."""
     if isinstance(element, (list, tuple)):
         if len(element) != 3:
-            raise ValueError(f"Invalid condition tuple: {element}")
+            raise ValueError("Invalid condition tuple: {}".format(element))
             
         field, domain_operator, value = element
         
@@ -116,7 +116,7 @@ def _process_element(element):
             'value': value
         }
     else:
-        raise ValueError(f"Unknown element: {element}")
+        raise ValueError("Unknown element: {}".format(element))
 
 
 def _optimize_query(query):
