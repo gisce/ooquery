@@ -30,20 +30,15 @@ jobs:
         mamba --enable-coverage
 
   test-python27:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
+    container: python:2.7-slim
     steps:
     - uses: actions/checkout@v3
-    - name: Set up Python 2.7.18
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y python2.7 python2.7-dev python-pip-whl
-        curl https://bootstrap.pypa.io/pip/2.7/get-pip.py --output get-pip.py
-        sudo python2.7 get-pip.py
     - name: Install dependencies
       run: |
-        python2.7 -m pip install -r requirements-dev.txt
-        python2.7 -m pip install coveralls
-        python2.7 -m pip install -e .
+        pip install -r requirements-dev.txt
+        pip install coveralls
+        pip install -e .
     - name: Run tests
       run: |
-        python2.7 -m mamba --enable-coverage
+        mamba --enable-coverage
