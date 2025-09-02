@@ -28,6 +28,22 @@ OPERATOR_MAP = {
     'not in': '!in',
 }
 
+# Inverse operator mapping to convert JSON operators back to OpenERP/Odoo operators
+INVERSE_OPERATOR_MAP = {
+    '=': '=',
+    '!=': '!=',
+    '>': '>',
+    '<': '<',
+    '>=': '>=',
+    '<=': '<=',
+    'like': 'like',
+    'not like': 'not like',
+    'contains': 'ilike',
+    '!contains': 'not ilike',
+    'in': 'in',
+    '!in': 'not in',
+}
+
 
 def convert_from_domain(domain):
     """
@@ -119,7 +135,124 @@ def _process_element(element):
         raise ValueError("Unknown element: {}".format(element))
 
 
+def convert_to_domain(query):
+    """
+    Convert a JSON query structure to an OpenERP/Odoo domain.
+    
+    Args:
+        query (dict): JSON structure with combinator and rules
+        
+    Returns:
+        list: OpenERP/Odoo domain array
+        
+    Example:
+        >>> convert_to_domain({'combinator': 'and', 'rules': [
+        ...     {'field': 'name', 'operator': '=', 'value': 'John'}
+        ... ]})
+        [('name', '=', 'John')]
+        
+        >>> convert_to_domain({'combinator': 'or', 'rules': [
+        ...     {'field': 'name', 'operator': '=', 'value': 'John'},
+        ...     {'field': 'age', 'operator': '>', 'value': 18}
+        ... ]})
+        ['|', ('name', '=', 'John'), ('age', '>', 18)]
+    """
+    if not query or not isinstance(query, dict):
+        return []
+        
+    rules = query.get('rules', [])
+    if not rules:
+        return []
+
+    combinator = query.get('combinator', 'and')
+    
+    if combinator == 'and':
+        # For AND, return a simple list of tuples
+        return [_process_rule(rule) for rule in rules]
+    else:
+        # For OR, build binary expression with prefix notation
+        return _build_binary_expression('|', rules)
+
+
+def _process_rule(rule):
+    """Process a single rule into a domain tuple or sub-domain."""
+    if not isinstance(rule, dict):
+        raise ValueError("Rule must be a dictionary: {}".format(rule))
+    
+    if 'rules' in rule:
+        # It's a nested query, convert recursively
+        return convert_to_domain(rule)
+    
+    # It's a simple rule
+    if 'field' not in rule or 'operator' not in rule or 'value' not in rule:
+        raise ValueError("Rule must have field, operator and value: {}".format(rule))
+    
+    field = rule['field']
+    json_operator = rule['operator']
+    value = rule['value']
+    
+    # Convert operator using inverse mapping
+    domain_operator = INVERSE_OPERATOR_MAP.get(json_operator, json_operator)
+    
+    # Special handling for 'in' operator with string values
+    if domain_operator == 'in' and isinstance(value, str):
+        value = [v.strip() for v in value.split(',')]
+    
+    return (field, domain_operator, value)
+
+
+def _build_binary_expression(operator, rules):
+    """Build binary expression for OR operations."""
+    if len(rules) == 0:
+        return []
+    
+    if len(rules) == 1:
+        return _process_rule(rules[0])
+    
+    # Build binary expression by reducing from left to right
+    result = _process_rule(rules[0])
+    
+    for rule in rules[1:]:
+        processed_rule = _process_rule(rule)
+        result = [operator, result, processed_rule]
+    
+    return result
+
+
 def _optimize_query(query):
+    """Optimize query by flattening unnecessary nesting."""
+    if not isinstance(query, dict) or 'rules' not in query:
+        return query
+        
+    rules = query['rules']
+    
+    # If only one rule, return it directly if it's a query
+    if len(rules) == 1:
+        rule = rules[0]
+        if isinstance(rule, dict) and 'combinator' in rule:
+            return rule
+        # Otherwise keep the single rule in the query
+        return query
+    
+    # Flatten rules with same combinator
+    optimized_rules = []
+    for rule in rules:
+        if (isinstance(rule, dict) and 
+            'combinator' in rule and 
+            rule['combinator'] == query['combinator']):
+            # Same combinator - flatten the rules
+            optimized_rule = _optimize_query(rule)
+            if 'rules' in optimized_rule:
+                optimized_rules.extend(optimized_rule['rules'])
+            else:
+                optimized_rules.append(optimized_rule)
+        else:
+            optimized_rules.append(rule)
+    
+    return {
+        'combinator': query['combinator'],
+        'rules': optimized_rules
+    }
     """Optimize query by flattening unnecessary nesting."""
     if not isinstance(query, dict) or 'rules' not in query:
         return query

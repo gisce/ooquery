@@ -1,5 +1,5 @@
 # coding=utf-8
-from ooquery.domain_converter import convert_from_domain
+from ooquery.domain_converter import convert_from_domain, convert_to_domain
 
 from expects import *
 from mamba import *
@@ -135,3 +135,175 @@ with description('The domain converter'):
                     {'field': 'state', 'operator': '!=', 'value': 'deleted'}
                 ]
             }))
+
+
+with description('The domain converter to_domain'):
+    with description('when converting empty or invalid queries'):
+        with it('should handle empty query'):
+            result = convert_to_domain({})
+            expect(result).to(equal([]))
+            
+        with it('should handle None query'):
+            result = convert_to_domain(None)
+            expect(result).to(equal([]))
+            
+        with it('should handle query with empty rules'):
+            result = convert_to_domain({'combinator': 'and', 'rules': []})
+            expect(result).to(equal([]))
+            
+    with description('when converting simple AND queries'):
+        with it('should convert single rule'):
+            query = {
+                'combinator': 'and',
+                'rules': [
+                    {'field': 'name', 'operator': '=', 'value': 'John'}
+                ]
+            }
+            result = convert_to_domain(query)
+            expect(result).to(equal([('name', '=', 'John')]))
+            
+        with it('should convert multiple AND rules'):
+            query = {
+                'combinator': 'and',
+                'rules': [
+                    {'field': 'name', 'operator': '=', 'value': 'John'},
+                    {'field': 'age', 'operator': '>', 'value': 18}
+                ]
+            }
+            result = convert_to_domain(query)
+            expect(result).to(equal([
+                ('name', '=', 'John'),
+                ('age', '>', 18)
+            ]))
+            
+    with description('when converting OR queries'):
+        with it('should convert simple OR query'):
+            query = {
+                'combinator': 'or',
+                'rules': [
+                    {'field': 'name', 'operator': '=', 'value': 'John'},
+                    {'field': 'age', 'operator': '>', 'value': 18}
+                ]
+            }
+            result = convert_to_domain(query)
+            expect(result).to(equal([
+                '|', ('name', '=', 'John'), ('age', '>', 18)
+            ]))
+            
+        with it('should convert multiple OR rules with binary grouping'):
+            query = {
+                'combinator': 'or',
+                'rules': [
+                    {'field': 'state', 'operator': '=', 'value': 'open'},
+                    {'field': 'state', 'operator': '=', 'value': 'draft'},
+                    {'field': 'state', 'operator': '=', 'value': 'pending'}
+                ]
+            }
+            result = convert_to_domain(query)
+            expect(result).to(equal([
+                '|', ['|', ('state', '=', 'open'), ('state', '=', 'draft')], ('state', '=', 'pending')
+            ]))
+            
+    with description('when converting operator mappings'):
+        with it('should convert contains operator'):
+            query = {
+                'combinator': 'and',
+                'rules': [
+                    {'field': 'name', 'operator': 'contains', 'value': 'john'}
+                ]
+            }
+            result = convert_to_domain(query)
+            expect(result).to(equal([('name', 'ilike', 'john')]))
+            
+        with it('should convert not contains operator'):
+            query = {
+                'combinator': 'and',
+                'rules': [
+                    {'field': 'name', 'operator': '!contains', 'value': 'john'}
+                ]
+            }
+            result = convert_to_domain(query)
+            expect(result).to(equal([('name', 'not ilike', 'john')]))
+            
+        with it('should convert in operator'):
+            query = {
+                'combinator': 'and',
+                'rules': [
+                    {'field': 'state', 'operator': 'in', 'value': ['open', 'draft']}
+                ]
+            }
+            result = convert_to_domain(query)
+            expect(result).to(equal([('state', 'in', ['open', 'draft'])]))
+            
+        with it('should convert not in operator'):
+            query = {
+                'combinator': 'and',
+                'rules': [
+                    {'field': 'state', 'operator': '!in', 'value': ['cancelled', 'deleted']}
+                ]
+            }
+            result = convert_to_domain(query)
+            expect(result).to(equal([('state', 'not in', ['cancelled', 'deleted'])]))
+            
+        with it('should handle in operator with string value'):
+            query = {
+                'combinator': 'and',
+                'rules': [
+                    {'field': 'state', 'operator': 'in', 'value': 'open, draft, pending'}
+                ]
+            }
+            result = convert_to_domain(query)
+            expect(result).to(equal([('state', 'in', ['open', 'draft', 'pending'])]))
+            
+    with description('when converting nested queries'):
+        with it('should convert nested AND query within OR'):
+            query = {
+                'combinator': 'or',
+                'rules': [
+                    {'field': 'name', 'operator': '=', 'value': 'John'},
+                    {
+                        'combinator': 'and',
+                        'rules': [
+                            {'field': 'age', 'operator': '>', 'value': 18},
+                            {'field': 'city', 'operator': '=', 'value': 'Barcelona'}
+                        ]
+                    }
+                ]
+            }
+            result = convert_to_domain(query)
+            expect(result).to(equal([
+                '|', ('name', '=', 'John'), [('age', '>', 18), ('city', '=', 'Barcelona')]
+            ]))
+            
+        with it('should convert nested OR query within AND'):
+            query = {
+                'combinator': 'and',
+                'rules': [
+                    {'field': 'active', 'operator': '=', 'value': True},
+                    {
+                        'combinator': 'or',
+                        'rules': [
+                            {'field': 'state', 'operator': '=', 'value': 'open'},
+                            {'field': 'state', 'operator': '=', 'value': 'draft'}
+                        ]
+                    }
+                ]
+            }
+            result = convert_to_domain(query)
+            expect(result).to(equal([
+                ('active', '=', True),
+                ['|', ('state', '=', 'open'), ('state', '=', 'draft')]
+            ]))
+            
+    with description('when handling round-trip conversions'):
+        with it('should maintain consistency for simple AND domain'):
+            original_domain = [('name', '=', 'John'), ('age', '>', 18)]
+            json_query = convert_from_domain(original_domain)
+            result_domain = convert_to_domain(json_query)
+            expect(result_domain).to(equal(original_domain))
+            
+        with it('should maintain consistency for simple OR domain'):
+            original_domain = ['|', ('name', '=', 'John'), ('age', '>', 18)]
+            json_query = convert_from_domain(original_domain)
+            result_domain = convert_to_domain(json_query)
+            expect(result_domain).to(equal(original_domain))
