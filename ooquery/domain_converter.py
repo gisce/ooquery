@@ -98,8 +98,13 @@ def _parse_domain_stack(domain):
                 'rules': [left, right]
             })
         elif isinstance(element, (list, tuple)):
-            # Regular condition tuple
-            stack.append(_process_element(element))
+            # Check if it's a nested domain or a condition tuple
+            if len(element) > 0 and element[0] in ('|', '&'):
+                # It's a nested domain, parse it recursively
+                stack.append(_parse_domain_stack(element))
+            else:
+                # It's a condition tuple
+                stack.append(_process_element(element))
     
     # Combine remaining stack elements with AND (reverse to maintain order)
     if len(stack) == 0:
@@ -220,39 +225,6 @@ def _build_binary_expression(operator, rules):
 
 
 def _optimize_query(query):
-    """Optimize query by flattening unnecessary nesting."""
-    if not isinstance(query, dict) or 'rules' not in query:
-        return query
-        
-    rules = query['rules']
-    
-    # If only one rule, return it directly if it's a query
-    if len(rules) == 1:
-        rule = rules[0]
-        if isinstance(rule, dict) and 'combinator' in rule:
-            return rule
-        # Otherwise keep the single rule in the query
-        return query
-    
-    # Flatten rules with same combinator
-    optimized_rules = []
-    for rule in rules:
-        if (isinstance(rule, dict) and 
-            'combinator' in rule and 
-            rule['combinator'] == query['combinator']):
-            # Same combinator - flatten the rules
-            optimized_rule = _optimize_query(rule)
-            if 'rules' in optimized_rule:
-                optimized_rules.extend(optimized_rule['rules'])
-            else:
-                optimized_rules.append(optimized_rule)
-        else:
-            optimized_rules.append(rule)
-    
-    return {
-        'combinator': query['combinator'],
-        'rules': optimized_rules
-    }
     """Optimize query by flattening unnecessary nesting."""
     if not isinstance(query, dict) or 'rules' not in query:
         return query
