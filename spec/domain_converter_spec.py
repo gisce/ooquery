@@ -201,7 +201,7 @@ with description('The domain converter to_domain'):
             }
             result = convert_to_domain(query)
             expect(result).to(equal([
-                '|', ['|', ('state', '=', 'open'), ('state', '=', 'draft')], ('state', '=', 'pending')
+                '|', '|', ('state', '=', 'open'), ('state', '=', 'draft'), ('state', '=', 'pending')
             ]))
             
     with description('when converting operator mappings'):
@@ -272,7 +272,7 @@ with description('The domain converter to_domain'):
             }
             result = convert_to_domain(query)
             expect(result).to(equal([
-                '|', ('name', '=', 'John'), [('age', '>', 18), ('city', '=', 'Barcelona')]
+                '|', ('name', '=', 'John'), ('age', '>', 18), ('city', '=', 'Barcelona')
             ]))
             
         with it('should convert nested OR query within AND'):
@@ -292,7 +292,7 @@ with description('The domain converter to_domain'):
             result = convert_to_domain(query)
             expect(result).to(equal([
                 ('active', '=', True),
-                ['|', ('state', '=', 'open'), ('state', '=', 'draft')]
+                '|', ('state', '=', 'open'), ('state', '=', 'draft')
             ]))
             
     with description('when handling round-trip conversions'):
@@ -304,6 +304,31 @@ with description('The domain converter to_domain'):
             
         with it('should maintain consistency for simple OR domain'):
             original_domain = ['|', ('name', '=', 'John'), ('age', '>', 18)]
+            json_query = convert_from_domain(original_domain)
+            result_domain = convert_to_domain(json_query)
+            expect(result_domain).to(equal(original_domain))
+            
+        with it('should maintain consistency for complex nested OR domain'):
+            original_domain = ['|', '|', ('state', '=', 'open'), ('state', '=', 'draft'), ('state', '=', 'pending')]
+            json_query = convert_from_domain(original_domain)
+            result_domain = convert_to_domain(json_query)
+            expect(result_domain).to(equal(original_domain))
+            
+        with it('should maintain consistency for mixed AND/OR domain'):
+            original_domain = [
+                ('active', '=', True),
+                '|', ('state', '=', 'open'), ('state', '=', 'draft'),
+                ('partner_id', '!=', False)
+            ]
+            json_query = convert_from_domain(original_domain)
+            result_domain = convert_to_domain(json_query)
+            expect(result_domain).to(equal(original_domain))
+            
+        with it('should maintain consistency for complex prefix notation'):
+            original_domain = [
+                '|', '&', ('name', 'ilike', 'John'), ('age', '>', 18),
+                '&', ('city', '=', 'Barcelona'), ('active', '=', True)
+            ]
             json_query = convert_from_domain(original_domain)
             result_domain = convert_to_domain(json_query)
             expect(result_domain).to(equal(original_domain))

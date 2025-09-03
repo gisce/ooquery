@@ -172,8 +172,17 @@ def convert_to_domain(query):
     combinator = query.get('combinator', 'and')
     
     if combinator == 'and':
-        # For AND, return a simple list of tuples
-        return [_process_rule(rule) for rule in rules]
+        # For AND, return a flat list combining all rules
+        result = []
+        for rule in rules:
+            processed = _process_rule(rule)
+            if (isinstance(processed, list) and len(processed) > 0 and 
+                all(isinstance(item, (tuple, str)) for item in processed)):
+                # It's a domain list, extend result with its elements
+                result.extend(processed)
+            else:
+                result.append(processed)
+        return result
     else:
         # For OR, build binary expression with prefix notation
         return _build_binary_expression('|', rules)
@@ -186,7 +195,15 @@ def _process_rule(rule):
     
     if 'rules' in rule:
         # It's a nested query, convert recursively
-        return convert_to_domain(rule)
+        nested_domain = convert_to_domain(rule)
+        # For AND queries, we want to return individual tuples, not a nested list
+        # For OR queries, we return the list as-is since it has operators
+        if (isinstance(nested_domain, list) and len(nested_domain) > 0 and 
+            nested_domain[0] not in ('|', '&')):
+            # It's an AND domain (list of tuples), return as individual tuples
+            # This will be handled by the caller to flatten properly
+            return nested_domain
+        return nested_domain
     
     # It's a simple rule
     if 'field' not in rule or 'operator' not in rule or 'value' not in rule:
@@ -207,19 +224,36 @@ def _process_rule(rule):
 
 
 def _build_binary_expression(operator, rules):
-    """Build binary expression for OR operations."""
+    """Build binary expression for OR operations using flat prefix notation."""
     if len(rules) == 0:
         return []
     
     if len(rules) == 1:
-        return _process_rule(rules[0])
+        processed = _process_rule(rules[0])
+        # If it's an AND list (no operators), flatten it
+        if (isinstance(processed, list) and len(processed) > 0 and 
+            all(isinstance(item, tuple) for item in processed)):
+            return processed
+        return processed
     
-    # Build binary expression by reducing from left to right
-    result = _process_rule(rules[0])
+    # For OpenERP/Odoo domains, use flat prefix notation
+    # Multiple OR: ['|', '|', rule1, rule2, rule3]
+    # Not nested like ['|', ['|', rule1, rule2], rule3]
+    result = []
     
-    for rule in rules[1:]:
+    # Add n-1 operators for n rules (prefix notation)
+    for i in range(len(rules) - 1):
+        result.append(operator)
+    
+    # Add all processed rules
+    for rule in rules:
         processed_rule = _process_rule(rule)
-        result = [operator, result, processed_rule]
+        if (isinstance(processed_rule, list) and len(processed_rule) > 0 and 
+            all(isinstance(item, tuple) for item in processed_rule)):
+            # It's an AND domain (list of tuples), add each tuple separately
+            result.extend(processed_rule)
+        else:
+            result.append(processed_rule)
     
     return result
 
