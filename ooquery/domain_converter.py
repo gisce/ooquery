@@ -196,13 +196,6 @@ def _process_rule(rule):
     if 'rules' in rule:
         # It's a nested query, convert recursively
         nested_domain = convert_to_domain(rule)
-        # For AND queries, we want to return individual tuples, not a nested list
-        # For OR queries, we return the list as-is since it has operators
-        if (isinstance(nested_domain, list) and len(nested_domain) > 0 and 
-            nested_domain[0] not in ('|', '&')):
-            # It's an AND domain (list of tuples), return as individual tuples
-            # This will be handled by the caller to flatten properly
-            return nested_domain
         return nested_domain
     
     # It's a simple rule
@@ -230,15 +223,11 @@ def _build_binary_expression(operator, rules):
     
     if len(rules) == 1:
         processed = _process_rule(rules[0])
-        # If it's an AND list (no operators), flatten it
-        if (isinstance(processed, list) and len(processed) > 0 and 
-            all(isinstance(item, tuple) for item in processed)):
-            return processed
-        return processed
+        return processed if isinstance(processed, list) else [processed]
     
     # For OpenERP/Odoo domains, use flat prefix notation
     # Multiple OR: ['|', '|', rule1, rule2, rule3]
-    # Not nested like ['|', ['|', rule1, rule2], rule3]
+    # Nested groups within OR: always explicit to preserve grouping semantics
     result = []
     
     # Add n-1 operators for n rules (prefix notation)
@@ -248,10 +237,21 @@ def _build_binary_expression(operator, rules):
     # Add all processed rules
     for rule in rules:
         processed_rule = _process_rule(rule)
-        if (isinstance(processed_rule, list) and len(processed_rule) > 0 and 
-            all(isinstance(item, tuple) for item in processed_rule)):
-            # It's an AND domain (list of tuples), add each tuple separately
-            result.extend(processed_rule)
+        if isinstance(processed_rule, list):
+            # Check if this is an AND domain that needs explicit operators
+            if (len(processed_rule) > 0 and 
+                processed_rule[0] not in ('|', '&') and
+                all(isinstance(item, tuple) for item in processed_rule)):
+                # It's an AND domain - add explicit & operators for any multi-rule group
+                # to preserve semantic grouping within the OR
+                if len(processed_rule) > 1:
+                    # Add explicit & operators in prefix notation
+                    for i in range(len(processed_rule) - 1):
+                        result.append('&')
+                result.extend(processed_rule)
+            else:
+                # It already has operators or is a single rule
+                result.extend(processed_rule if isinstance(processed_rule, list) else [processed_rule])
         else:
             result.append(processed_rule)
     

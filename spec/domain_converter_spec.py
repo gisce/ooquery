@@ -272,7 +272,7 @@ with description('The domain converter to_domain'):
             }
             result = convert_to_domain(query)
             expect(result).to(equal([
-                '|', ('name', '=', 'John'), ('age', '>', 18), ('city', '=', 'Barcelona')
+                '|', ('name', '=', 'John'), '&', ('age', '>', 18), ('city', '=', 'Barcelona')
             ]))
             
         with it('should convert nested OR query within AND'):
