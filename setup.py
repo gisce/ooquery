@@ -8,7 +8,7 @@ setup(
     license='MIT',
     author='GISCE-TI, S.L.',
     install_requires=[
-        'python-sql'
+        'python-sql<1.3'
     ],
     author_email='devel@gisce.net',
     description='OpenObject Query Parser',
