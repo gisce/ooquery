@@ -57,7 +57,7 @@ class Parser(object):
             field = field.field
         else:
             join_type = 'INNER'
-        if isinstance(field, str) and '.' in field:
+        if isinstance(field, string_types) and '.' in field:
             return self.get_field_from_related_table(
                 field.split('.')[:-1], field.split('.')[-1],
                 join_type
