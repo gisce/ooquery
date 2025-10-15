@@ -780,6 +780,7 @@ with description('The OOQuery object'):
             expect(str(q.parser.joins_map['table_2_id.table_3_id'])).to(equal(str(join2)))
 
         with it('must support deep joins with unaccent with field with ors'):
+            from sql.functions import Upper
             # FK resolver per a dues FK diferents
             def dummy_fk(table, field):
                 if table == 'table':
@@ -833,26 +834,26 @@ with description('The OOQuery object'):
                 t.field2.as_('field2')
             )
 
-            # LHS en cada cas és columna resolta via join corresponent
+            # ilike es converteix automàticament a UPPER(...) LIKE UPPER(...)
             or_chain = Or((
                 Or((
                     Or((
                         Or((
                             Or((
-                                Unaccent(join_titular.right.name).ilike(
-                                    Unaccent(name)),
-                                Unaccent(join_titular.right.vat).ilike(
-                                    Unaccent(name)),
+                                Upper(Unaccent(join_titular.right.name)).like(
+                                    Upper(Unaccent(name))),
+                                Upper(Unaccent(join_titular.right.vat)).like(
+                                    Upper(Unaccent(name))),
                             )),
-                            Unaccent(join_dir.right.email).ilike(
-                                Unaccent(name)),
+                            Upper(Unaccent(join_dir.right.email)).like(
+                                Upper(Unaccent(name))),
                         )),
-                        Unaccent(join_dir.right.mobile).ilike(
-                            Unaccent(name)),
+                        Upper(Unaccent(join_dir.right.mobile)).like(
+                            Upper(Unaccent(name))),
                     )),
-                    Unaccent(join_dir.right.phone).ilike(Unaccent(name)),
+                    Upper(Unaccent(join_dir.right.phone)).like(Upper(Unaccent(name))),
                 )),
-                t.field1.ilike(name),
+                Upper(t.field1).like(Upper(name)),
             ))
             sel.where = And((or_chain,))
             expect(tuple(sql)).to(equal(tuple(sel)))
