@@ -778,3 +778,81 @@ with description('The OOQuery object'):
             expect(q.parser.joins_map).to(have_len(2))
             expect(str(q.parser.joins_map['table_2_id'])).to(equal(str(join)))
             expect(str(q.parser.joins_map['table_2_id.table_3_id'])).to(equal(str(join2)))
+
+        with it('must support deep joins with unaccent with field with ors'):
+            # FK resolver per a dues FK diferents
+            def dummy_fk(table, field):
+                if table == 'table':
+                    fks = {
+                        'titular': {
+                            'constraint_name': 'fk_contraint_name',
+                            'table_name': 'table',
+                            'column_name': 'titular',
+                            'foreign_table_name': 'table2',
+                            'foreign_column_name': 'id'
+                        },
+                        'direccio_notificacio': {
+                            'constraint_name': 'fk_contraint_name2',
+                            'table_name': 'table',
+                            'column_name': 'direccio_notificacio',
+                            'foreign_table_name': 'dirnotif',
+                            'foreign_column_name': 'id'
+                        }
+                    }
+                    return fks[field]
+                raise KeyError(field)
+
+            name = 'foo'
+            q = OOQuery('table', dummy_fk)
+            sql = q.select(['field1', 'field2']).where([
+                '|',
+                    '|',
+                        '|',
+                            '|',
+                                '|',
+                                    (Unaccent('titular.name'), 'ilike', Unaccent(name)),
+                                    (Unaccent('titular.vat'), 'ilike', Unaccent(name)),
+                                (Unaccent('direccio_notificacio.email'), 'ilike', Unaccent(name)),
+                            (Unaccent('direccio_notificacio.mobile'), 'ilike', Unaccent(name)),
+                        (Unaccent('direccio_notificacio.phone'), 'ilike',Unaccent(name)),
+                    ('field1', 'ilike', name),
+            ])
+            t = Table('table')
+            tdir = Table('dirnotif')
+            t2 = Table('table2')
+
+            # L'ordre dels joins és com els crea el parser: primer direccio_notificacio, després titular
+            join_dir = t.join(tdir)
+            join_dir.condition = t.direccio_notificacio == join_dir.right.id
+
+            join_titular = join_dir.join(t2)
+            join_titular.condition = t.titular == join_titular.right.id
+
+            sel = join_titular.select(
+                t.field1.as_('field1'),
+                t.field2.as_('field2')
+            )
+
+            # LHS en cada cas és columna resolta via join corresponent
+            or_chain = Or((
+                Or((
+                    Or((
+                        Or((
+                            Or((
+                                Unaccent(join_titular.right.name).ilike(
+                                    Unaccent(name)),
+                                Unaccent(join_titular.right.vat).ilike(
+                                    Unaccent(name)),
+                            )),
+                            Unaccent(join_dir.right.email).ilike(
+                                Unaccent(name)),
+                        )),
+                        Unaccent(join_dir.right.mobile).ilike(
+                            Unaccent(name)),
+                    )),
+                    Unaccent(join_dir.right.phone).ilike(Unaccent(name)),
+                )),
+                t.field1.ilike(name),
+            ))
+            sel.where = And((or_chain,))
+            expect(tuple(sql)).to(equal(tuple(sel)))
