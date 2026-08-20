@@ -2,6 +2,7 @@
 from ooquery import OOQuery
 from ooquery.expression import Field
 from ooquery.operators import *
+from ooquery.parser import Parser
 from sql import Table, Literal, NullsFirst, NullsLast
 from sql.operators import And, Concat
 from sql.aggregate import Max
@@ -28,6 +29,28 @@ with description('The OOQuery object'):
             sel = t.select(t.field1.as_('field1'), t.field2.as_('field2'))
             sel.where = And((t.field3 == 4,))
             expect(tuple(sql)).to(equal(tuple(sel)))
+
+        with it('should resolve projection fields only once'):
+            class CountingParser(Parser):
+                def __init__(self, *args, **kwargs):
+                    super(CountingParser, self).__init__(*args, **kwargs)
+                    self.resolved_fields = []
+
+                def get_table_field(self, table, field):
+                    self.resolved_fields.append(field)
+                    return super(CountingParser, self).get_table_field(
+                        table, field
+                    )
+
+            class CountingOOQuery(OOQuery):
+                def create_parser(self):
+                    return CountingParser(self.table, self.foreign_key)
+
+            q = CountingOOQuery('table')
+            q.select(['field1', 'field2']).where([('field3', '=', 4)])
+
+            expect(q.parser.resolved_fields.count('field1')).to(equal(1))
+            expect(q.parser.resolved_fields.count('field2')).to(equal(1))
 
         with it('should have where method and compare two fields of the table'):
             q = OOQuery('table')
