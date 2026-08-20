@@ -9,7 +9,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: python:2.7-slim
     steps:
       - uses: actions/checkout@v3
       - name: Get tag
@@ -18,8 +17,7 @@ jobs:
         with:
           strip_v: false
       - name: Run setup
-        run: |
-          python setup.py sdist
+        run: docker run --rm -v "$PWD:/src" -w /src python:2.7-slim python setup.py sdist
       - name: Creating a realease/pre-release
         id: create_release
         uses: softprops/action-gh-release@v1
