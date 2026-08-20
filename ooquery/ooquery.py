@@ -12,6 +12,7 @@ from ooquery.parser import Parser
 class OOQuery(object):
     def __init__(self, table, foreign_key=None):
         self._fields = []
+        self._resolved_fields = []
         self.table = Table(table)
         self.foreign_key = foreign_key
         self._select = self.table.select()
@@ -111,11 +112,16 @@ class OOQuery(object):
                 kwargs['group_by'].append(
                     table_field
                 )
-        self._select = self.select_on.select(*self.fields, **self.select_opts)
+        self._resolved_fields = self.fields
+        self._select = self.select_on.select(
+            *self._resolved_fields, **self.select_opts
+        )
         return self
 
     def where(self, domain):
         where = self.parser.parse(domain)
-        self._select = self.select_on.select(*self.fields, **self.select_opts)
+        self._select = self.select_on.select(
+            *self._resolved_fields, **self.select_opts
+        )
         self._select.where = where
         return self._select
